@@ -1,0 +1,73 @@
+# the finger efforts are likely current.
+# for the other joints it's torque in Nm
+soft_limits:
+    eff: [16,16,16,4,4,4,1.3,1.3]
+    
+vel_j1_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j1
+vel_j2_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j2
+vel_j3_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j3
+vel_j4_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j4
+vel_j5_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j5
+vel_j6_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: j6
+vel_f1_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: f1
+vel_f2_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: f2
+
+pos_j1_controller:
+    type: position_controllers/JointPositionController
+    joint: j1
+    initial: 85.09191131591797
+pos_j2_controller:
+    type: position_controllers/JointPositionController
+    joint: j2
+    initial: 184.74264526367188
+pos_j3_controller:
+    type: position_controllers/JointPositionController
+    joint: j3
+    initial: 281.13970947265625
+pos_j4_controller:
+    type: position_controllers/JointPositionController
+    joint: j4
+    initial: 275.93182373046875
+pos_j5_controller:
+    type: position_controllers/JointPositionController
+    joint: j5
+    initial: 107.79545593261719
+pos_j6_controller:
+    type: position_controllers/JointPositionController
+    joint: j6
+    initial: 116.5227279663086
+pos_f1_controller:
+    type: position_controllers/JointPositionController
+    joint: f1
+    initial: 0.0
+pos_f2_controller:
+    type: position_controllers/JointPositionController
+    joint: f2
+    initial: 0.0
+
+position_joint_mode_controller:
+    type: pr_ros_controllers/JointModeController
+    joint_mode: 1 # position
+velocity_joint_mode_controller:
+    type: pr_ros_controllers/JointModeController
+    joint_mode: 2 # velocity
+
+joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 500
