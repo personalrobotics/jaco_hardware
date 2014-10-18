@@ -33,6 +33,8 @@ class MicoRobot : public hardware_interface::RobotHW
 public:
   MicoRobot(ros::NodeHandle nh) 
   { 
+    //ROS_INFO("hello from constructor!");
+
     int i;
 
     // connect and register the joint state interface.
@@ -59,14 +61,14 @@ public:
 
     // connect and register the joint position interface
     // this takes joint velocities in as a command.
-    hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("j1"), &cmd[0]);
-    hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd[1]);
-    hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd[2]);
-    hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd[3]);
-    hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd[4]);
-    hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd[5]);
-    hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd[6]);
-    hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd[7]);
+    hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("j1"), &cmd_vel[0]);
+    hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd_vel[1]);
+    hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd_vel[2]);
+    hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd_vel[3]);
+    hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd_vel[4]);
+    hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd_vel[5]);
+    hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd_vel[6]);
+    hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd_vel[7]);
     
     jnt_vel_interface.registerHandle(vel_handle_base);
     jnt_vel_interface.registerHandle(vel_handle_shoulder);
@@ -81,14 +83,14 @@ public:
     
     // connect and register the joint position interface
     // this takes joint positions in as a command.
-    hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("j1"), &cmd[0]);
-    hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd[1]);
-    hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd[2]);
-    hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd[3]);
-    hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd[4]);
-    hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd[5]);
-    hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd[6]);
-    hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd[7]);
+    hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("j1"), &cmd_pos[0]);
+    hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd_pos[1]);
+    hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd_pos[2]);
+    hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd_pos[3]);
+    hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd_pos[4]);
+    hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd_pos[5]);
+    hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd_pos[6]);
+    hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd_pos[7]);
     
     jnt_pos_interface.registerHandle(pos_handle_base);
     jnt_pos_interface.registerHandle(pos_handle_shoulder);
@@ -167,6 +169,7 @@ public:
   
   void write(void)
   {
+	
     if (last_mode != joint_mode)
     {
         arm->erase_trajectories();
@@ -182,20 +185,21 @@ public:
       case hardware_interface::MODE_POSITION: // send joint position commands
         for (int i = 0; i < 8; i++)
         {
-          if (abs(cmd[i]) > 1e-5)
+          if (abs(cmd_pos[i]) > 1e-5)
 		        allZero = false;
 	      }
 	      if (!allZero)
           {
+
 		      arm->set_target_ang(
-                180.0/M_PI * (cmd[0]-pos_offsets[0]),
-                180.0/M_PI * (cmd[1]-pos_offsets[1]),
-                180.0/M_PI * (cmd[2]-pos_offsets[2]),
-                180.0/M_PI * (cmd[3]-pos_offsets[3]),
-                180.0/M_PI * (cmd[4]-pos_offsets[4]),
-                180.0/M_PI * (cmd[5]-pos_offsets[5]),
-                cmd[6],
-                cmd[7],
+                180.0/M_PI * (cmd_pos[0]-pos_offsets[0]),
+                180.0/M_PI * (cmd_pos[1]-pos_offsets[1]),
+                180.0/M_PI * (cmd_pos[2]-pos_offsets[2]),
+                180.0/M_PI * (cmd_pos[3]-pos_offsets[3]),
+                180.0/M_PI * (cmd_pos[4]-pos_offsets[4]),
+                180.0/M_PI * (cmd_pos[5]-pos_offsets[5]),
+                cmd_pos[6],
+                cmd_pos[7],
                 0);
           }
         break;
@@ -209,15 +213,15 @@ public:
         
         for(int i=0; i<6; i++)
         {
-          target.joints[i] = 180.0/M_PI * cmd[i];
+          target.joints[i] = 180.0/M_PI * cmd_vel[i];
         }
         
-        target.finger_position[0] = cmd[6];
-        target.finger_position[1] = cmd[7];
+        target.finger_position[0] = cmd_vel[6];
+        target.finger_position[1] = cmd_vel[7];
         
         robot_cmd.target = target;
-        robot_cmd.target.finger_position[0] = cmd[6];
-        robot_cmd.target.finger_position[1] = cmd[7];
+        robot_cmd.target.finger_position[0] = cmd_vel[6];
+        robot_cmd.target.finger_position[1] = cmd_vel[7];
         arm->set_target(robot_cmd);
         break;
       case hardware_interface::MODE_EFFORT:
@@ -228,7 +232,11 @@ public:
     // but to send joint velocities, we have to send it a trajectory point
     // in angular mode. Ugly, I know.
   }
-  
+   jaco_position_t returnPos(void){
+
+ 	jaco_position_t arm_pos = arm->get_ang_pos();
+    	return arm_pos;
+ }
   void read(void)
   {
     // make sure that pos, vel, and eff are up to date.
@@ -249,7 +257,13 @@ public:
       vel[i] = M_PI/180.0 * arm_vel.joints[i];
       eff[i] = arm_eff.joints[i];
     }
-
+	
+	//debugging
+	//std::ostringstream strs;
+	//strs << vel[0] << "|" << vel[1] << "|" << vel[2] << "|" << vel[3] <<"|"<<vel[4]<<"|"<<vel[5]<<"|"<<vel[6]<< std::endl;
+	//std::string str = strs.str();
+    //ROS_INFO(str.c_str());
+    
     for (int i=0; i<2; i++)
     {
       int j = i + 6; // joint corresponding to finger i
@@ -296,7 +310,8 @@ private:
   hardware_interface::JointModeInterface jm_interface;
   
   JacoArm *arm;
-  double cmd[8];
+  double cmd_pos[8];
+  double cmd_vel[8];
   double pos[8];
   double vel[8];
   double eff[8];
