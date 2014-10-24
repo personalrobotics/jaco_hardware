@@ -15,7 +15,6 @@ int main(int argc, char* argv[])
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-     ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
 
   double delta = 0;
   while (ros::ok())
