@@ -204,6 +204,7 @@ public:
           }
         break;
       case hardware_interface::MODE_VELOCITY: // send joint velocity commands
+        
         jaco_basic_traj_point_t robot_cmd;
         robot_cmd.pos_type = SPEED_ANGULAR;
         robot_cmd.hand_mode = MODE_SPEED;
@@ -211,11 +212,13 @@ public:
         
         jaco_position_t target;
         
+        
         for(int i=0; i<6; i++)
         {
           target.joints[i] = 180.0/M_PI * cmd_vel[i];
         }
-        
+        //target.joints[0] = -40;
+
         target.finger_position[0] = cmd_vel[6];
         target.finger_position[1] = cmd_vel[7];
         
