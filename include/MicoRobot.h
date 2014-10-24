@@ -184,6 +184,10 @@ public:
     {
       case hardware_interface::MODE_POSITION: // send joint position commands
        // std::cout << "position mode!" << std::endl;
+        if (last_mode == hardware_interface::MODE_VELOCITY){
+				last_mode = joint_mode;
+				break;
+			}
         for (int i = 0; i < 8; i++)
         {
           if (abs(cmd_pos[i]) > 1e-5)
@@ -219,12 +223,12 @@ public:
         {
           target.joints[i] = 180.0/M_PI * cmd_vel[i];
         }
-        std:cout<<"commands sent" <<std::endl;
-        for(int i = 0; i < 6; i++)
-        {
-			std::cout<<"target.joint["<<i<<"]: "<<target.joints[i]<<"|";
-		}
-		std::cout<<std::endl;
+        //std:cout<<"commands sent" <<std::endl;
+        //for(int i = 0; i < 6; i++)
+        //{
+			//std::cout<<"target.joint["<<i<<"]: "<<target.joints[i]<<"|";
+		//}
+		//std::cout<<std::endl;
         
         //target.joints[0] = -40;
 
