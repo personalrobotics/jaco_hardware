@@ -169,7 +169,7 @@ public:
   
   void write(void)
   {
-	
+  
     if (last_mode != joint_mode)
     {
         arm->erase_trajectories();
@@ -185,26 +185,26 @@ public:
       case hardware_interface::MODE_POSITION: // send joint position commands
        // std::cout << "position mode!" << std::endl;
         if (last_mode == hardware_interface::MODE_VELOCITY){
-				last_mode = joint_mode;
-				break;
-			}
+        last_mode = joint_mode;
+        break;
+      }
         for (int i = 0; i < 8; i++)
         {
           if (abs(cmd_pos[i]) > 1e-5)
-		        allZero = false;
-	      }
-	      if (!allZero)
+            allZero = false;
+        }
+        if (!allZero)
           {
 
-		      arm->set_target_ang(
+          arm->set_target_ang(
                 180.0/M_PI * (cmd_pos[0]-pos_offsets[0]),
                 180.0/M_PI * (cmd_pos[1]-pos_offsets[1]),
                 180.0/M_PI * (cmd_pos[2]-pos_offsets[2]),
                 180.0/M_PI * (cmd_pos[3]-pos_offsets[3]),
                 180.0/M_PI * (cmd_pos[4]-pos_offsets[4]),
                 180.0/M_PI * (cmd_pos[5]-pos_offsets[5]),
-                cmd_pos[6],
-                cmd_pos[7],
+                5400*cmd_pos[6],
+                5400*cmd_pos[7],
                 0);
           }
         break;
@@ -226,9 +226,9 @@ public:
         //std:cout<<"commands sent" <<std::endl;
         //for(int i = 0; i < 6; i++)
         //{
-			//std::cout<<"target.joint["<<i<<"]: "<<target.joints[i]<<"|";
-		//}
-		//std::cout<<std::endl;
+      //std::cout<<"target.joint["<<i<<"]: "<<target.joints[i]<<"|";
+    //}
+    //std::cout<<std::endl;
         
         //target.joints[0] = -40;
 
@@ -236,8 +236,8 @@ public:
         target.finger_position[1] = cmd_vel[7];
         
         robot_cmd.target = target;
-        robot_cmd.target.finger_position[0] = cmd_vel[6];
-        robot_cmd.target.finger_position[1] = cmd_vel[7];
+        robot_cmd.target.finger_position[0] = 5400*cmd_vel[6];
+        robot_cmd.target.finger_position[1] = 5400*cmd_vel[7];
         arm->set_target(robot_cmd);
         break;
       case hardware_interface::MODE_EFFORT:
@@ -250,8 +250,8 @@ public:
   }
    jaco_position_t returnPos(void){
 
- 	jaco_position_t arm_pos = arm->get_ang_pos();
-    	return arm_pos;
+  jaco_position_t arm_pos = arm->get_ang_pos();
+      return arm_pos;
  }
   void read(void)
   {
@@ -273,11 +273,11 @@ public:
       vel[i] = M_PI/180.0 * arm_vel.joints[i];
       eff[i] = arm_eff.joints[i];
     }
-	
-	//debugging
-	//std::ostringstream strs;
-	//strs << vel[0] << "|" << vel[1] << "|" << vel[2] << "|" << vel[3] <<"|"<<vel[4]<<"|"<<vel[5]<<"|"<<vel[6]<< std::endl;
-	//std::string str = strs.str();
+  
+  //debugging
+  //std::ostringstream strs;
+  //strs << vel[0] << "|" << vel[1] << "|" << vel[2] << "|" << vel[3] <<"|"<<vel[4]<<"|"<<vel[5]<<"|"<<vel[6]<< std::endl;
+  //std::string str = strs.str();
     //ROS_INFO(str.c_str());
     
     for (int i=0; i<2; i++)
