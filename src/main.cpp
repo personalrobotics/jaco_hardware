@@ -17,10 +17,18 @@ int main(int argc, char* argv[])
 
 
   double delta = 0;
+
   while (ros::ok())
   {
      robot.read();
-     cm.update(robot.get_time(), robot.get_period());
+      if (robot.eff_stall == true){
+            cm.update(robot.get_time(), robot.get_period(), true);
+            sleep(1);
+      }
+      else{
+          cm.update(robot.get_time(), robot.get_period());
+      }
+
      robot.write();
      sleep(0.01);
   }
