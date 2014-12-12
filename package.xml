@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>mico_hardware</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>A ros_control hardware interface for the Mico arm</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
