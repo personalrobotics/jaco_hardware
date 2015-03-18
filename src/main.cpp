@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
       }
 
      robot.write();
-     sleep(0.01);
+     usleep(10000);
   }
 
   return 0;
