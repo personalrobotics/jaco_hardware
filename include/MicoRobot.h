@@ -146,6 +146,13 @@ class MicoRobot: public hardware_interface::RobotHW
             last_mode = hardware_interface::MODE_VELOCITY;
         }
 
+        virtual ~MicoRobot()
+        {
+            arm->erase_trajectories();
+            arm->stop_force_ctrl();
+            delete arm;
+        }
+
         void initializeOffsets()
         {
             // Initially, the offsets are the hard coded positions
