@@ -25,8 +25,10 @@
 using namespace std;
 using namespace KinDrv;
 
-static double hardcoded_pos_offsets[6] = { M_PI, 0.5 * M_PI, -0.5 * M_PI, M_PI, M_PI, 0.0 };
-static double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
+static const double hardcoded_pos_offsets[6] = { M_PI, 0.5 * M_PI, -0.5 * M_PI, M_PI, M_PI, 0.0 };
+static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
+static const int num_full_dof = 8;
+static const int num_arm_dof = 6;
 
 class MicoRobot: public hardware_interface::RobotHW
 {
@@ -129,10 +131,10 @@ class MicoRobot: public hardware_interface::RobotHW
             arm->stop_force_ctrl();
 
             /* initialize default positions */
-            for (i = 0; i < 6; i++)
+            for (i = 0; i < num_arm_dof; i++)
                 this->pos_offsets[i] = hardcoded_pos_offsets[i];
             this->read();
-            for (i = 0; i < 6; i++)
+            for (i = 0; i < num_arm_dof; i++)
             {
                 while (this->pos[i] < hardcoded_pos_midpoints[i] - M_PI)
                 {
@@ -161,6 +163,26 @@ class MicoRobot: public hardware_interface::RobotHW
             return ros::Duration(0.01);
         }
 
+        inline double degreesToRadians(double degrees)
+        {
+            return (180.0 / M_PI) * degrees;
+        }
+
+        inline double radiansToDegrees(double radians)
+        {
+            return (M_PI / 180.0) * radians;
+        }
+
+        inline double radiansToFingerTicks(double radians)
+        {
+            return 5400.0 * radians;
+        }
+
+        inline double fingerTicksToRadians(double ticks)
+        {
+            return ticks / 5400.0;
+        }
+
         void write(void)
         {
             if (last_mode != joint_mode)
@@ -184,7 +206,7 @@ class MicoRobot: public hardware_interface::RobotHW
                         last_mode = joint_mode;
                         break;
                     }
-                    for (int i = 0; i < 8; i++)
+                    for (int i = 0; i < num_full_dof; i++)
                     {
                         if (abs(cmd_pos[i]) > 1e-5)
                             allZero = false;
@@ -192,14 +214,14 @@ class MicoRobot: public hardware_interface::RobotHW
                     if (!allZero)
                     {
 
-                        arm->set_target_ang(180.0 / M_PI * (cmd_pos[0] - pos_offsets[0]),
-                                            180.0 / M_PI * (cmd_pos[1] - pos_offsets[1]),
-                                            180.0 / M_PI * (cmd_pos[2] - pos_offsets[2]),
-                                            180.0 / M_PI * (cmd_pos[3] - pos_offsets[3]),
-                                            180.0 / M_PI * (cmd_pos[4] - pos_offsets[4]),
-                                            180.0 / M_PI * (cmd_pos[5] - pos_offsets[5]),
-                                            5400 * cmd_pos[6],
-                                            5400 * cmd_pos[7],
+                        arm->set_target_ang(radiansToDegrees(cmd_pos[0] - pos_offsets[0]),
+                                            radiansToDegrees(cmd_pos[1] - pos_offsets[1]),
+                                            radiansToDegrees(cmd_pos[2] - pos_offsets[2]),
+                                            radiansToDegrees(cmd_pos[3] - pos_offsets[3]),
+                                            radiansToDegrees(cmd_pos[4] - pos_offsets[4]),
+                                            radiansToDegrees(cmd_pos[5] - pos_offsets[5]),
+                                            radiansToFingerTicks(cmd_pos[6]),
+                                            radiansToFingerTicks(cmd_pos[7]),
                                             0);
                     }
                     break;
@@ -216,17 +238,15 @@ class MicoRobot: public hardware_interface::RobotHW
 
                     jaco_position_t target;
 
-                    for (int i = 0; i < 6; i++)
+                    for (int i = 0; i < num_arm_dof; i++)
                     {
-                        target.joints[i] = 180.0 / M_PI * cmd_vel[i];
+                        target.joints[i] = radiansToDegrees(cmd_vel[i]);
                     }
 
-                    target.finger_position[0] = cmd_vel[6];
-                    target.finger_position[1] = cmd_vel[7];
-
+                    target.finger_position[0] = radiansToFingerTicks(cmd_vel[6]);
+                    target.finger_position[1] = radiansToFingerTicks(cmd_vel[7]);
                     robot_cmd.target = target;
-                    robot_cmd.target.finger_position[0] = 5400 * cmd_vel[6];
-                    robot_cmd.target.finger_position[1] = 5400 * cmd_vel[7];
+
                     arm->set_target(robot_cmd);
                     break;
                 }
@@ -255,7 +275,7 @@ class MicoRobot: public hardware_interface::RobotHW
 
             jaco_position_t target;
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < num_arm_dof; i++)
             {
                 target.joints[i] = 0;
             }
@@ -280,23 +300,23 @@ class MicoRobot: public hardware_interface::RobotHW
             jaco_position_t arm_pos = arm->get_ang_pos();
             jaco_position_t arm_vel = arm->get_ang_vel();
             jaco_position_t arm_eff = arm->get_ang_force();
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < num_arm_dof; i++)
             {
                 /* note: here we convert to radians, and add our offsets;
                  * at some point we might reverse direction as well
                  * (when urdf/orxml models have been similarly updated) */
-                pos[i] = M_PI / 180.0 * arm_pos.joints[i] + pos_offsets[i];
-                vel[i] = M_PI / 180.0 * arm_vel.joints[i];
+                pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
+                vel[i] = degreesToRadians(arm_vel.joints[i]);
                 eff[i] = arm_eff.joints[i];
             }
 
             for (int i = 0; i < 2; i++)
             {
-                int j = i + 6; // joint corresponding to finger i
+                int j = i + num_arm_dof; // joint corresponding to finger i
 
-                pos[j] = arm_pos.finger_position[i] / 5400.0;
-                vel[j] = arm_vel.finger_position[i];
-                eff[j] = arm_eff.finger_position[i]; //this is likely to be meaningless
+                pos[j] = fingerTicksToRadians(arm_pos.finger_position[i]);
+                vel[j] = fingerTicksToRadians(arm_vel.finger_position[i]);
+                eff[j] = fingerTicksToRadians(arm_eff.finger_position[i]); //this is likely to be meaningless
             }
 
             // check soft limits. If outside of limits, set to force control mode
@@ -304,9 +324,9 @@ class MicoRobot: public hardware_interface::RobotHW
             // would still be hitting whatever it was.
 
             bool all_in_limits = true;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < num_full_dof; i++)
             {
-                if (eff[i] < -soft_limits[i] || soft_limits[i] < eff[i])
+                if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
                 {
                     all_in_limits = false;
                     ROS_ERROR("Exceeded soft effort limits on joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
@@ -328,7 +348,6 @@ class MicoRobot: public hardware_interface::RobotHW
                 arm->stop_force_ctrl();
                 arm->set_control_ang();
                 sendZeroVel();
-
             }
 
         }
@@ -342,12 +361,12 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::JointModeInterface jm_interface;
 
         JacoArm *arm;
-        double cmd_pos[8];
-        double cmd_vel[8];
-        double pos[8];
-        double vel[8];
-        double eff[8];
-        double pos_offsets[6];
+        double cmd_pos[num_full_dof];
+        double cmd_vel[num_full_dof];
+        double pos[num_full_dof];
+        double vel[num_full_dof];
+        double eff[num_full_dof];
+        double pos_offsets[num_arm_dof];
         vector<double> soft_limits;
         int joint_mode; // this tells whether we're in position or velocity control mode
         int last_mode;
