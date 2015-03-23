@@ -257,6 +257,7 @@ class MicoRobot: public hardware_interface::RobotHW
 
                 case hardware_interface::MODE_EFFORT:
                 {
+                    ROS_WARN("Mico hardware does not support effort control.");
                     break;
                 }
             }
