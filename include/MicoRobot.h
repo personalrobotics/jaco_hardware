@@ -141,9 +141,22 @@ class MicoRobot: public hardware_interface::RobotHW
             arm->stop_force_ctrl();
 
             /* initialize default positions */
+            initializeOffsets();
+
+            last_mode = hardware_interface::MODE_VELOCITY;
+        }
+
+        void initializeOffsets()
+        {
+            // Initially, the offsets are the hard coded positions
             for (i = 0; i < num_arm_dof; i++)
                 this->pos_offsets[i] = hardcoded_pos_offsets[i];
+
             this->read();
+
+            // Next, we wrap the positions so they are within -pi to pi of
+            // the hardcoded midpoints, and add that to the offset. TODO(mklingen):
+            // figure out if this makes sense.
             for (i = 0; i < num_arm_dof; i++)
             {
                 while (this->pos[i] < hardcoded_pos_midpoints[i] - M_PI)
@@ -157,8 +170,6 @@ class MicoRobot: public hardware_interface::RobotHW
                     this->pos_offsets[i] -= 2.0 * M_PI;
                 }
             }
-
-            last_mode = hardware_interface::MODE_VELOCITY;
         }
 
         ros::Time get_time(void)
