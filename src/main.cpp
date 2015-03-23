@@ -1,6 +1,7 @@
 #include <MicoRobot.h>
 #include <iostream>
 #include "std_msgs/String.h"
+#include <ros/rate.h>
 #include <sstream>
 
 int main(int argc, char* argv[])
@@ -15,8 +16,8 @@ int main(int argc, char* argv[])
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
-    double delta = 0;
-
+    // Ros control rate of 100Hz
+    ros::Rate controlRate(100.0);
     while (ros::ok())
     {
         robot.read();
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
         }
 
         robot.write();
-        usleep(10000);
+        controlRate.sleep();
     }
 
     return 0;
