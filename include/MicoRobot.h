@@ -30,12 +30,22 @@ static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI,
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
 
+
 class MicoRobot: public hardware_interface::RobotHW
 {
     public:
         MicoRobot(ros::NodeHandle nh)
         {
             int i;
+            cmd_pos.resize(num_full_dof);
+            cmd_vel.resize(num_full_dof);
+            zero_velocity_command.resize(num_full_dof, 0.0);
+            pos.resize(num_full_dof);
+            vel.resize(num_full_dof);
+            eff.resize(num_full_dof);
+            pos_offsets.resize(num_arm_dof);
+            soft_limits.resize(num_full_dof);
+
             // connect and register the joint state interface.
             // this gives joint states (pos, vel, eff) back as an output.
             hardware_interface::JointStateHandle state_handle_base("j1", &pos[0], &vel[0], &eff[0]);
@@ -183,6 +193,40 @@ class MicoRobot: public hardware_interface::RobotHW
             return ticks / 5400.0;
         }
 
+        void sendPositionCommand(const std::vector<double>& command)
+        {
+            arm->set_target_ang(radiansToDegrees(command.at(0) - pos_offsets[0]),
+                                radiansToDegrees(command.at(1) - pos_offsets[1]),
+                                radiansToDegrees(command.at(2) - pos_offsets[2]),
+                                radiansToDegrees(command.at(3) - pos_offsets[3]),
+                                radiansToDegrees(command.at(4) - pos_offsets[4]),
+                                radiansToDegrees(command.at(5) - pos_offsets[5]),
+                                radiansToFingerTicks(command.at(6)),
+                                radiansToFingerTicks(command.at(7)),
+                                0);
+        }
+
+        void sendVelocityCommand(const std::vector<double>& command)
+        {
+            jaco_basic_traj_point_t robot_cmd;
+            robot_cmd.pos_type = SPEED_ANGULAR;
+            robot_cmd.hand_mode = MODE_SPEED;
+            robot_cmd.time_delay = 0.0;
+
+            jaco_position_t target;
+
+            for (int i = 0; i < num_arm_dof; i++)
+            {
+                target.joints[i] = radiansToDegrees(command.at(i));
+            }
+
+            target.finger_position[0] = radiansToFingerTicks(command.at(6));
+            target.finger_position[1] = radiansToFingerTicks(command.at(7));
+            robot_cmd.target = target;
+
+            arm->set_target(robot_cmd);
+        }
+
         void write(void)
         {
             if (last_mode != joint_mode)
@@ -193,37 +237,13 @@ class MicoRobot: public hardware_interface::RobotHW
             if (eff_stall)
                 return;
 
-            bool allZero = true;
             // have to check the mode type and then choose what commands to send
             switch (joint_mode)
             {
                 // send joint position commands
                 case hardware_interface::MODE_POSITION:
                 {
-                    // std::cout << "position mode!" << std::endl;
-                    if (last_mode == hardware_interface::MODE_VELOCITY)
-                    {
-                        last_mode = joint_mode;
-                        break;
-                    }
-                    for (int i = 0; i < num_full_dof; i++)
-                    {
-                        if (abs(cmd_pos[i]) > 1e-5)
-                            allZero = false;
-                    }
-                    if (!allZero)
-                    {
-
-                        arm->set_target_ang(radiansToDegrees(cmd_pos[0] - pos_offsets[0]),
-                                            radiansToDegrees(cmd_pos[1] - pos_offsets[1]),
-                                            radiansToDegrees(cmd_pos[2] - pos_offsets[2]),
-                                            radiansToDegrees(cmd_pos[3] - pos_offsets[3]),
-                                            radiansToDegrees(cmd_pos[4] - pos_offsets[4]),
-                                            radiansToDegrees(cmd_pos[5] - pos_offsets[5]),
-                                            radiansToFingerTicks(cmd_pos[6]),
-                                            radiansToFingerTicks(cmd_pos[7]),
-                                            0);
-                    }
+                    sendPositionCommand(cmd_pos);
                     break;
                 }
 
@@ -231,23 +251,7 @@ class MicoRobot: public hardware_interface::RobotHW
                 // To send joint velocities, we have to send it a trajectory point in angular mode.
                 case hardware_interface::MODE_VELOCITY:
                 {
-                    jaco_basic_traj_point_t robot_cmd;
-                    robot_cmd.pos_type = SPEED_ANGULAR;
-                    robot_cmd.hand_mode = MODE_SPEED;
-                    robot_cmd.time_delay = 0.0;
-
-                    jaco_position_t target;
-
-                    for (int i = 0; i < num_arm_dof; i++)
-                    {
-                        target.joints[i] = radiansToDegrees(cmd_vel[i]);
-                    }
-
-                    target.finger_position[0] = radiansToFingerTicks(cmd_vel[6]);
-                    target.finger_position[1] = radiansToFingerTicks(cmd_vel[7]);
-                    robot_cmd.target = target;
-
-                    arm->set_target(robot_cmd);
+                    sendVelocityCommand(cmd_vel);
                     break;
                 }
 
@@ -266,27 +270,38 @@ class MicoRobot: public hardware_interface::RobotHW
             return arm_pos;
         }
 
-        void sendZeroVel(void)
+        void checkForStall()
         {
-            jaco_basic_traj_point_t robot_cmd;
-            robot_cmd.pos_type = SPEED_ANGULAR;
-            robot_cmd.hand_mode = MODE_SPEED;
-            robot_cmd.time_delay = 0.0;
+            // check soft limits. If outside of limits, set to force control mode
+            // this way the arm can move easily. (if we sent it zero commands, it
+            // would still be hitting whatever it was.
 
-            jaco_position_t target;
-
-            for (int i = 0; i < num_arm_dof; i++)
+            bool all_in_limits = true;
+            for (int i = 0; i < num_full_dof; i++)
             {
-                target.joints[i] = 0;
+                if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
+                {
+                    all_in_limits = false;
+                    ROS_ERROR("Exceeded soft effort limits on joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
+                    if (!eff_stall)
+                    {
+                        ROS_INFO("Sending zero velocities");
+                        sendVelocityCommand(zero_velocity_command);
+                        ROS_INFO("Entering force_control mode.");
+                        eff_stall = true;
+                        arm->start_force_ctrl();
+                    }
+                }
             }
 
-            target.finger_position[0] = 0;
-            target.finger_position[1] = 0;
-
-            robot_cmd.target = target;
-            robot_cmd.target.finger_position[0] = 0;
-            robot_cmd.target.finger_position[1] = 0;
-            arm->set_target(robot_cmd);
+            if (all_in_limits && eff_stall)
+            {
+                eff_stall = false;
+                ROS_INFO("Exiting force_control mode.");
+                arm->stop_force_ctrl();
+                arm->set_control_ang();
+                sendVelocityCommand(zero_velocity_command);
+            }
         }
 
         void read(void)
@@ -319,37 +334,7 @@ class MicoRobot: public hardware_interface::RobotHW
                 eff[j] = fingerTicksToRadians(arm_eff.finger_position[i]); //this is likely to be meaningless
             }
 
-            // check soft limits. If outside of limits, set to force control mode
-            // this way the arm can move easily. (if we sent it zero commands, it
-            // would still be hitting whatever it was.
-
-            bool all_in_limits = true;
-            for (int i = 0; i < num_full_dof; i++)
-            {
-                if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
-                {
-                    all_in_limits = false;
-                    ROS_ERROR("Exceeded soft effort limits on joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
-                    if (!eff_stall)
-                    {
-                        ROS_INFO("Sending zero velocities");
-                        sendZeroVel();
-                        ROS_INFO("Entering force_control mode.");
-                        eff_stall = true;
-                        arm->start_force_ctrl();
-                    }
-                }
-            }
-
-            if (all_in_limits && eff_stall)
-            {
-                eff_stall = false;
-                ROS_INFO("Exiting force_control mode.");
-                arm->stop_force_ctrl();
-                arm->set_control_ang();
-                sendZeroVel();
-            }
-
+            checkForStall();
         }
 
         bool eff_stall;
@@ -361,13 +346,14 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::JointModeInterface jm_interface;
 
         JacoArm *arm;
-        double cmd_pos[num_full_dof];
-        double cmd_vel[num_full_dof];
-        double pos[num_full_dof];
-        double vel[num_full_dof];
-        double eff[num_full_dof];
-        double pos_offsets[num_arm_dof];
-        vector<double> soft_limits;
+        vector<double> cmd_pos;
+        vector<double>  cmd_vel;
+        vector<double>  pos;
+        vector<double>  vel;
+        vector<double>  eff;
+        vector<double>  pos_offsets;
+        vector<double>  soft_limits;
+        vector<double> zero_velocity_command;
         int joint_mode; // this tells whether we're in position or velocity control mode
         int last_mode;
 };
