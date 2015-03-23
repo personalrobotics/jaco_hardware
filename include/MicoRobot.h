@@ -140,7 +140,7 @@ class MicoRobot: public hardware_interface::RobotHW
             eff_stall = false;
             arm->stop_force_ctrl();
 
-            /* initialize default positions */
+            // initialize default positions
             initializeOffsets();
 
             last_mode = hardware_interface::MODE_VELOCITY;
@@ -329,9 +329,9 @@ class MicoRobot: public hardware_interface::RobotHW
             jaco_position_t arm_eff = arm->get_ang_force();
             for (int i = 0; i < num_arm_dof; i++)
             {
-                /* note: here we convert to radians, and add our offsets;
-                 * at some point we might reverse direction as well
-                 * (when urdf/orxml models have been similarly updated) */
+                // note: here we convert to radians, and add our offsets;
+                // at some point we might reverse direction as well
+                // (when urdf/orxml models have been similarly updated)
                 pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
                 vel[i] = degreesToRadians(arm_vel.joints[i]);
                 eff[i] = arm_eff.joints[i];
