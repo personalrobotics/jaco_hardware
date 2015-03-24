@@ -156,7 +156,7 @@ class MicoRobot: public hardware_interface::RobotHW
         void initializeOffsets()
         {
             // Initially, the offsets are the hard coded positions
-            for (i = 0; i < num_arm_dof; i++)
+            for (int i = 0; i < num_arm_dof; i++)
                 this->pos_offsets[i] = hardcoded_pos_offsets[i];
 
             this->read();
@@ -164,7 +164,7 @@ class MicoRobot: public hardware_interface::RobotHW
             // Next, we wrap the positions so they are within -pi to pi of
             // the hardcoded midpoints, and add that to the offset. TODO(mklingen):
             // figure out if this makes sense.
-            for (i = 0; i < num_arm_dof; i++)
+            for (int i = 0; i < num_arm_dof; i++)
             {
                 while (this->pos[i] < hardcoded_pos_midpoints[i] - M_PI)
                 {
