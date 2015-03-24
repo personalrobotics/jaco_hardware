@@ -193,12 +193,12 @@ class MicoRobot: public hardware_interface::RobotHW
 
         inline double degreesToRadians(double degrees)
         {
-            return (180.0 / M_PI) * degrees;
+            return (M_PI / 180.0) * degrees;
         }
 
         inline double radiansToDegrees(double radians)
         {
-            return (M_PI / 180.0) * radians;
+            return (180.0 / M_PI) * radians;
         }
 
         inline double radiansToFingerTicks(double radians)
@@ -342,7 +342,10 @@ class MicoRobot: public hardware_interface::RobotHW
                 pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
                 vel[i] = degreesToRadians(arm_vel.joints[i]);
                 eff[i] = arm_eff.joints[i];
+
+                printf("%f\n", pos[i]);
             }
+            printf("\n");
 
             for (int i = 0; i < 2; i++)
             {
