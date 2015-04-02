@@ -2,8 +2,8 @@
 Changelog for package mico_hardware
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-04-01)
+------------------
 * fixed conversion
 * fixed incorrect conversion
 * fixed compile error
