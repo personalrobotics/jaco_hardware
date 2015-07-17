@@ -13,9 +13,9 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 
-// libkindrv
-#include <libkindrv/types.h>
-#include <libkindrv/kindrv.h>
+// kinova api
+#include <kinova/KinovaTypes.h>
+#include <kinova/Kinova.API.UsbCommandLayerUbuntu.h>
 
 // c++
 #include <stdexcept>
@@ -23,12 +23,12 @@
 #include <iostream>
 
 using namespace std;
-using namespace KinDrv;
 
 static const double hardcoded_pos_offsets[6] = { M_PI, 0.5 * M_PI, -0.5 * M_PI, M_PI, M_PI, 0.0 };
 static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
+
 
 
 class MicoRobot: public hardware_interface::RobotHW
@@ -119,11 +119,30 @@ class MicoRobot: public hardware_interface::RobotHW
 
             registerInterface(&jm_interface);
 
-            // set up libkindrv
-            arm = new JacoArm();
-            arm->start_api_ctrl();
-            arm->set_control_ang();
 
+            // Start Up Kinova API
+            int r = NO_ERROR_KINOVA;
+            
+            r = InitAPI();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not initialize API: Error code %d",r);
+            }
+            
+            r = StartControlAPI();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not start API Control: Error code %d",r);
+            }
+            
+            r = SetAngularControl();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not set angular control: Error code %d",r);
+            }
+            
+            r = StartForceControl();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not start force control: Error code %d",r);
+            }
+            
             // get soft limits from rosparams
             if (nh.hasParam("soft_limits/eff"))
             {
@@ -138,7 +157,7 @@ class MicoRobot: public hardware_interface::RobotHW
 
             // set stall
             eff_stall = false;
-            arm->stop_force_ctrl();
+            //arm->stop_force_ctrl();
 
             // initialize default positions
             initializeOffsets();
@@ -148,17 +167,19 @@ class MicoRobot: public hardware_interface::RobotHW
 
         virtual ~MicoRobot()
         {
-            arm->erase_trajectories();
-            arm->stop_force_ctrl();
-            delete arm;
+            int r = NO_ERROR_KINOVA;
+            r = StopControlAPI();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not stop API Control: Error code %d",r);
+            }
+            r = CloseAPI();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not close API Control: Error code %d",r);
+            }
         }
 
         void initializeOffsets()
         {
-            // Initially, the offsets are the hard coded positions
-            for (int i = 0; i < num_arm_dof; i++)
-                this->pos_offsets[i] = hardcoded_pos_offsets[i];
-
             this->read();
 
             // Next, we wrap the positions so they are within -pi to pi of
@@ -213,7 +234,7 @@ class MicoRobot: public hardware_interface::RobotHW
 
         void sendPositionCommand(const std::vector<double>& command)
         {
-            arm->set_target_ang(radiansToDegrees(command.at(0) - pos_offsets[0]),
+            /*arm->set_target_ang(radiansToDegrees(command.at(0) - pos_offsets[0]),
                                 radiansToDegrees(command.at(1) - pos_offsets[1]),
                                 radiansToDegrees(command.at(2) - pos_offsets[2]),
                                 radiansToDegrees(command.at(3) - pos_offsets[3]),
@@ -221,35 +242,40 @@ class MicoRobot: public hardware_interface::RobotHW
                                 radiansToDegrees(command.at(5) - pos_offsets[5]),
                                 radiansToFingerTicks(command.at(6)),
                                 radiansToFingerTicks(command.at(7)),
-                                0);
+                                0);*/
         }
 
         void sendVelocityCommand(const std::vector<double>& command)
         {
-            jaco_basic_traj_point_t robot_cmd;
-            robot_cmd.pos_type = SPEED_ANGULAR;
-            robot_cmd.hand_mode = MODE_SPEED;
-            robot_cmd.time_delay = 0.0;
-
-            jaco_position_t target;
-
-            for (int i = 0; i < num_arm_dof; i++)
-            {
-                target.joints[i] = radiansToDegrees(command.at(i));
+            // Need to send an "advance trajectory" with a single point and the correct settings
+            
+            AngularInfo joint_vel;
+            joint_vel.InitStruct();
+            joint_vel.Actuator1 = float(radiansToDegrees(command.at(0)));
+            joint_vel.Actuator2 = float(radiansToDegrees(command.at(1)));
+            joint_vel.Actuator3 = float(radiansToDegrees(command.at(2)));
+            joint_vel.Actuator4 = float(radiansToDegrees(command.at(3)));
+            joint_vel.Actuator5 = float(radiansToDegrees(command.at(4)));
+            joint_vel.Actuator6 = float(radiansToDegrees(command.at(5)));
+            
+            TrajectoryPoint trajectory;
+            trajectory.InitStruct(); // initialize structure
+            memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
+            trajectory.Position.Type = ANGULAR_VELOCITY; // set to angular velocity 
+            trajectory.Position.Actuators = joint_vel; // confusingly, velocity is passed in the position struct
+            
+            int r = NO_ERROR_KINOVA;
+            r = SendAdvanceTrajectory(trajectory);
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not send : Error code %d",r);
             }
-
-            target.finger_position[0] = radiansToFingerTicks(command.at(6));
-            target.finger_position[1] = radiansToFingerTicks(command.at(7));
-            robot_cmd.target = target;
-
-            arm->set_target(robot_cmd);
         }
 
         void write(void)
         {
             if (last_mode != joint_mode)
             {
-                arm->erase_trajectories();
+                EraseAllTrajectories()
             }
 
             if (eff_stall)
@@ -283,11 +309,12 @@ class MicoRobot: public hardware_interface::RobotHW
             last_mode = joint_mode;
         }
 
+        /*
         jaco_position_t returnPos(void)
         {
-            jaco_position_t arm_pos = arm->get_ang_pos();
+            jaco_position_t arm_pos; // = arm->get_ang_pos();
             return arm_pos;
-        }
+        }*/
 
         void checkForStall()
         {
@@ -308,7 +335,7 @@ class MicoRobot: public hardware_interface::RobotHW
                         sendVelocityCommand(zero_velocity_command);
                         ROS_INFO("Entering force_control mode.");
                         eff_stall = true;
-                        arm->start_force_ctrl();
+                        //arm->start_force_ctrl();
                     }
                 }
             }
@@ -317,8 +344,8 @@ class MicoRobot: public hardware_interface::RobotHW
             {
                 eff_stall = false;
                 ROS_INFO("Exiting force_control mode.");
-                arm->stop_force_ctrl();
-                arm->set_control_ang();
+                //arm->stop_force_ctrl();
+                //arm->set_control_ang();
                 sendVelocityCommand(zero_velocity_command);
             }
         }
@@ -331,29 +358,31 @@ class MicoRobot: public hardware_interface::RobotHW
             // reading values constantly and storing them locally, so
             // at least there is a recent value available for the controller.
 
-            jaco_position_t arm_pos = arm->get_ang_pos();
-            jaco_position_t arm_vel = arm->get_ang_vel();
-            jaco_position_t arm_eff = arm->get_ang_force();
+            //jaco_position_t arm_pos = arm->get_ang_pos();
+            //jaco_position_t arm_vel = arm->get_ang_vel();
+            //jaco_position_t arm_eff = arm->get_ang_force();
+            
             for (int i = 0; i < num_arm_dof; i++)
             {
                 // note: here we convert to radians, and add our offsets;
                 // at some point we might reverse direction as well
                 // (when urdf/orxml models have been similarly updated)
-                pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
-                vel[i] = degreesToRadians(arm_vel.joints[i]);
-                eff[i] = arm_eff.joints[i];
+                //pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
+                //vel[i] = degreesToRadians(arm_vel.joints[i]);
+                //eff[i] = arm_eff.joints[i];
             }
 
             for (int i = 0; i < 2; i++)
             {
                 int j = i + num_arm_dof; // joint corresponding to finger i
 
-                pos[j] = fingerTicksToRadians(arm_pos.finger_position[i]);
-                vel[j] = fingerTicksToRadians(arm_vel.finger_position[i]);
-                eff[j] = fingerTicksToRadians(arm_eff.finger_position[i]); //this is likely to be meaningless
+                //pos[j] = fingerTicksToRadians(arm_pos.finger_position[i]);
+                //vel[j] = fingerTicksToRadians(arm_vel.finger_position[i]);
+                //eff[j] = fingerTicksToRadians(arm_eff.finger_position[i]); //this is likely to be meaningless
             }
 
             checkForStall();
+            
         }
 
         bool eff_stall;
@@ -364,7 +393,7 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::PositionJointInterface jnt_pos_interface;
         hardware_interface::JointModeInterface jm_interface;
 
-        JacoArm *arm;
+        //JacoArm *arm;
         vector<double> cmd_pos;
         vector<double>  cmd_vel;
         vector<double>  pos;
