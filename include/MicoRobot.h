@@ -24,7 +24,6 @@
 
 using namespace std;
 
-static const double hardcoded_pos_offsets[6] = { M_PI, 0.5 * M_PI, -0.5 * M_PI, M_PI, M_PI, 0.0 };
 static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
@@ -48,14 +47,14 @@ class MicoRobot: public hardware_interface::RobotHW
 
             // connect and register the joint state interface.
             // this gives joint states (pos, vel, eff) back as an output.
-            hardware_interface::JointStateHandle state_handle_base("j1", &pos[0], &vel[0], &eff[0]);
-            hardware_interface::JointStateHandle state_handle_shoulder("j2", &pos[1], &vel[1], &eff[1]);
-            hardware_interface::JointStateHandle state_handle_elbow("j3", &pos[2], &vel[2], &eff[2]);
-            hardware_interface::JointStateHandle state_handle_wrist0("j4", &pos[3], &vel[3], &eff[3]);
-            hardware_interface::JointStateHandle state_handle_wrist1("j5", &pos[4], &vel[4], &eff[4]);
-            hardware_interface::JointStateHandle state_handle_wrist2("j6", &pos[5], &vel[5], &eff[5]);
-            hardware_interface::JointStateHandle state_handle_finger0("f1", &pos[6], &vel[6], &eff[6]);
-            hardware_interface::JointStateHandle state_handle_finger1("f2", &pos[7], &vel[7], &eff[7]);
+            hardware_interface::JointStateHandle state_handle_base("mico_joint_1", &pos[0], &vel[0], &eff[0]);
+            hardware_interface::JointStateHandle state_handle_shoulder("mico_joint_2", &pos[1], &vel[1], &eff[1]);
+            hardware_interface::JointStateHandle state_handle_elbow("mico_joint_3", &pos[2], &vel[2], &eff[2]);
+            hardware_interface::JointStateHandle state_handle_wrist0("mico_joint_4", &pos[3], &vel[3], &eff[3]);
+            hardware_interface::JointStateHandle state_handle_wrist1("mico_joint_5", &pos[4], &vel[4], &eff[4]);
+            hardware_interface::JointStateHandle state_handle_wrist2("mico_joint_6", &pos[5], &vel[5], &eff[5]);
+            hardware_interface::JointStateHandle state_handle_finger0("mico_joint_finger_1", &pos[6], &vel[6], &eff[6]);
+            hardware_interface::JointStateHandle state_handle_finger1("mico_joint_finger_2", &pos[7], &vel[7], &eff[7]);
 
             jnt_state_interface.registerHandle(state_handle_base);
             jnt_state_interface.registerHandle(state_handle_shoulder);
@@ -70,14 +69,14 @@ class MicoRobot: public hardware_interface::RobotHW
 
             // connect and register the joint position interface
             // this takes joint velocities in as a command.
-            hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("j1"), &cmd_vel[0]);
-            hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd_vel[1]);
-            hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd_vel[2]);
-            hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd_vel[3]);
-            hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd_vel[4]);
-            hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd_vel[5]);
-            hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd_vel[6]);
-            hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd_vel[7]);
+            hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("mico_joint_1"), &cmd_vel[0]);
+            hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("mico_joint_2"), &cmd_vel[1]);
+            hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("mico_joint_3"), &cmd_vel[2]);
+            hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("mico_joint_4"), &cmd_vel[3]);
+            hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("mico_joint_5"), &cmd_vel[4]);
+            hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("mico_joint_6"), &cmd_vel[5]);
+            hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("mico_joint_finger_1"), &cmd_vel[6]);
+            hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("mico_joint_finger_2"), &cmd_vel[7]);
 
             jnt_vel_interface.registerHandle(vel_handle_base);
             jnt_vel_interface.registerHandle(vel_handle_shoulder);
@@ -92,14 +91,14 @@ class MicoRobot: public hardware_interface::RobotHW
 
             // connect and register the joint position interface
             // this takes joint positions in as a command.
-            hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("j1"), &cmd_pos[0]);
-            hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("j2"), &cmd_pos[1]);
-            hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("j3"), &cmd_pos[2]);
-            hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("j4"), &cmd_pos[3]);
-            hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("j5"), &cmd_pos[4]);
-            hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("j6"), &cmd_pos[5]);
-            hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("f1"), &cmd_pos[6]);
-            hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("f2"), &cmd_pos[7]);
+            hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("mico_joint_1"), &cmd_pos[0]);
+            hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("mico_joint_2"), &cmd_pos[1]);
+            hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("mico_joint_3"), &cmd_pos[2]);
+            hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("mico_joint_4"), &cmd_pos[3]);
+            hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("mico_joint_5"), &cmd_pos[4]);
+            hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("mico_joint_6"), &cmd_pos[5]);
+            hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("mico_joint_finger_1"), &cmd_pos[6]);
+            hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("mico_joint_finger_2"), &cmd_pos[7]);
 
             jnt_pos_interface.registerHandle(pos_handle_base);
             jnt_pos_interface.registerHandle(pos_handle_shoulder);
@@ -383,30 +382,30 @@ class MicoRobot: public hardware_interface::RobotHW
             GetAngularVelocity(arm_vel);
             GetForcesInfo(arm_torq);
             
-            pos[0] = double(arm_pos.Actuators.Actuator1);
-            pos[1] = double(arm_pos.Actuators.Actuator2);
-            pos[2] = double(arm_pos.Actuators.Actuator3);
-            pos[3] = double(arm_pos.Actuators.Actuator4);
-            pos[4] = double(arm_pos.Actuators.Actuator5);
-            pos[5] = double(arm_pos.Actuators.Actuator6);
-            pos[6] = double(arm_pos.Fingers.Finger1);
-            pos[7] = double(arm_pos.Fingers.Finger2);
+            pos[0] = degreesToRadians(double(arm_pos.Actuators.Actuator1));
+            pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2));
+            pos[2] = degreesToRadians(double(arm_pos.Actuators.Actuator3));
+            pos[3] = degreesToRadians(double(arm_pos.Actuators.Actuator4));
+            pos[4] = degreesToRadians(double(arm_pos.Actuators.Actuator5));
+            pos[5] = degreesToRadians(double(arm_pos.Actuators.Actuator6));
+            pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1));
+            pos[7] = degreesToRadians(double(arm_pos.Fingers.Finger2));
             
-            vel[0] = double(arm_vel.Actuators.Actuator1);
-            vel[1] = double(arm_vel.Actuators.Actuator2);
-            vel[2] = double(arm_vel.Actuators.Actuator3);
-            vel[3] = double(arm_vel.Actuators.Actuator4);
-            vel[4] = double(arm_vel.Actuators.Actuator5);
-            vel[5] = double(arm_vel.Actuators.Actuator6);
-            vel[6] = double(arm_vel.Fingers.Finger1);
-            vel[7] = double(arm_vel.Fingers.Finger2);
+            vel[0] = degreesToRadians(double(arm_vel.Actuators.Actuator1));
+            vel[1] = degreesToRadians(double(arm_vel.Actuators.Actuator2));
+            vel[2] = degreesToRadians(double(arm_vel.Actuators.Actuator3));
+            vel[3] = degreesToRadians(double(arm_vel.Actuators.Actuator4));
+            vel[4] = degreesToRadians(double(arm_vel.Actuators.Actuator5));
+            vel[5] = degreesToRadians(double(arm_vel.Actuators.Actuator6));
+            vel[6] = degreesToRadians(double(arm_vel.Fingers.Finger1));
+            vel[7] = degreesToRadians(double(arm_vel.Fingers.Finger2));
             
-            eff[0] = double(arm_torq.Actuator1);
-            eff[1] = double(arm_torq.Actuator2);
-            eff[2] = double(arm_torq.Actuator3);
-            eff[3] = double(arm_torq.Actuator4);
-            eff[4] = double(arm_torq.Actuator5);
-            eff[5] = double(arm_torq.Actuator6);
+            eff[0] = degreesToRadians(double(arm_torq.Actuator1));
+            eff[1] = degreesToRadians(double(arm_torq.Actuator2));
+            eff[2] = degreesToRadians(double(arm_torq.Actuator3));
+            eff[3] = degreesToRadians(double(arm_torq.Actuator4));
+            eff[4] = degreesToRadians(double(arm_torq.Actuator5));
+            eff[5] = degreesToRadians(double(arm_torq.Actuator6));
             eff[6] = 0;
             eff[7] = 0;
             
