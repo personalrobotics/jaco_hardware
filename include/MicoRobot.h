@@ -157,7 +157,6 @@ class MicoRobot: public hardware_interface::RobotHW
 
             // set stall
             eff_stall = false;
-            //arm->stop_force_ctrl();
 
             // initialize default positions
             initializeOffsets();
@@ -234,20 +233,39 @@ class MicoRobot: public hardware_interface::RobotHW
 
         void sendPositionCommand(const std::vector<double>& command)
         {
-            /*arm->set_target_ang(radiansToDegrees(command.at(0) - pos_offsets[0]),
-                                radiansToDegrees(command.at(1) - pos_offsets[1]),
-                                radiansToDegrees(command.at(2) - pos_offsets[2]),
-                                radiansToDegrees(command.at(3) - pos_offsets[3]),
-                                radiansToDegrees(command.at(4) - pos_offsets[4]),
-                                radiansToDegrees(command.at(5) - pos_offsets[5]),
-                                radiansToFingerTicks(command.at(6)),
-                                radiansToFingerTicks(command.at(7)),
-                                0);*/
+            // Need to send an "advance trajectory" with a single point and the correct settings
+            // Angular position
+            
+            // Here the pos_offsets are just to avoid the arm "unwinding" back to zero when we 
+            // first use position control since that might cause unintended effects.
+            
+            AngularInfo joint_pos;
+            joint_pos.InitStruct();
+            joint_pos.Actuator1 = float(radiansToDegrees(command.at(0) - pos_offsets[0]));
+            joint_pos.Actuator2 = float(radiansToDegrees(command.at(1) - pos_offsets[1]));
+            joint_pos.Actuator3 = float(radiansToDegrees(command.at(2) - pos_offsets[2]));
+            joint_pos.Actuator4 = float(radiansToDegrees(command.at(3) - pos_offsets[3]));
+            joint_pos.Actuator5 = float(radiansToDegrees(command.at(4) - pos_offsets[4]));
+            joint_pos.Actuator6 = float(radiansToDegrees(command.at(5) - pos_offsets[5]));
+            
+            TrajectoryPoint trajectory;
+            trajectory.InitStruct(); // initialize structure
+            memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
+            trajectory.Position.Type = ANGULAR_POSITION; // set to angular position 
+            trajectory.Position.Actuators = joint_pos; // position is passed in the position struct
+            
+            int r = NO_ERROR_KINOVA;
+            r = SendAdvanceTrajectory(trajectory);
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not send : Error code %d",r);
+            }
+
         }
 
         void sendVelocityCommand(const std::vector<double>& command)
         {
             // Need to send an "advance trajectory" with a single point and the correct settings
+            // Angular velocity
             
             AngularInfo joint_vel;
             joint_vel.InitStruct();
@@ -270,12 +288,17 @@ class MicoRobot: public hardware_interface::RobotHW
                 ROS_ERROR("Could not send : Error code %d",r);
             }
         }
+        
+        void sendTorqueCommand(const std::vector<double>& command)
+        {
+            //SendAngularTorqueCommand()
+        }
 
         void write(void)
         {
             if (last_mode != joint_mode)
             {
-                EraseAllTrajectories()
+                EraseAllTrajectories();
             }
 
             if (eff_stall)
@@ -308,13 +331,6 @@ class MicoRobot: public hardware_interface::RobotHW
 
             last_mode = joint_mode;
         }
-
-        /*
-        jaco_position_t returnPos(void)
-        {
-            jaco_position_t arm_pos; // = arm->get_ang_pos();
-            return arm_pos;
-        }*/
 
         void checkForStall()
         {
@@ -357,30 +373,43 @@ class MicoRobot: public hardware_interface::RobotHW
             // and getting the actual values back, we'll need to be
             // reading values constantly and storing them locally, so
             // at least there is a recent value available for the controller.
-
-            //jaco_position_t arm_pos = arm->get_ang_pos();
-            //jaco_position_t arm_vel = arm->get_ang_vel();
-            //jaco_position_t arm_eff = arm->get_ang_force();
             
-            for (int i = 0; i < num_arm_dof; i++)
-            {
-                // note: here we convert to radians, and add our offsets;
-                // at some point we might reverse direction as well
-                // (when urdf/orxml models have been similarly updated)
-                //pos[i] = degreesToRadians(arm_pos.joints[i]) + pos_offsets[i];
-                //vel[i] = degreesToRadians(arm_vel.joints[i]);
-                //eff[i] = arm_eff.joints[i];
-            }
-
-            for (int i = 0; i < 2; i++)
-            {
-                int j = i + num_arm_dof; // joint corresponding to finger i
-
-                //pos[j] = fingerTicksToRadians(arm_pos.finger_position[i]);
-                //vel[j] = fingerTicksToRadians(arm_vel.finger_position[i]);
-                //eff[j] = fingerTicksToRadians(arm_eff.finger_position[i]); //this is likely to be meaningless
-            }
-
+            AngularPosition arm_pos;
+            AngularPosition arm_vel;
+            ForcesInfo arm_torq;
+            
+            // Requires 3 seperate calls to the USB
+            GetAngularPosition(arm_pos);
+            GetAngularVelocity(arm_vel);
+            GetForcesInfo(arm_torq);
+            
+            pos[0] = double(arm_pos.Actuators.Actuator1);
+            pos[1] = double(arm_pos.Actuators.Actuator2);
+            pos[2] = double(arm_pos.Actuators.Actuator3);
+            pos[3] = double(arm_pos.Actuators.Actuator4);
+            pos[4] = double(arm_pos.Actuators.Actuator5);
+            pos[5] = double(arm_pos.Actuators.Actuator6);
+            pos[6] = double(arm_pos.Fingers.Finger1);
+            pos[7] = double(arm_pos.Fingers.Finger2);
+            
+            vel[0] = double(arm_vel.Actuators.Actuator1);
+            vel[1] = double(arm_vel.Actuators.Actuator2);
+            vel[2] = double(arm_vel.Actuators.Actuator3);
+            vel[3] = double(arm_vel.Actuators.Actuator4);
+            vel[4] = double(arm_vel.Actuators.Actuator5);
+            vel[5] = double(arm_vel.Actuators.Actuator6);
+            vel[6] = double(arm_vel.Fingers.Finger1);
+            vel[7] = double(arm_vel.Fingers.Finger2);
+            
+            eff[0] = double(arm_torq.Actuator1);
+            eff[1] = double(arm_torq.Actuator2);
+            eff[2] = double(arm_torq.Actuator3);
+            eff[3] = double(arm_torq.Actuator4);
+            eff[4] = double(arm_torq.Actuator5);
+            eff[5] = double(arm_torq.Actuator6);
+            eff[6] = 0;
+            eff[7] = 0;
+            
             checkForStall();
             
         }
