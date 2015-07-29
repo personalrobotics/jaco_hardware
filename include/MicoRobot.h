@@ -391,7 +391,7 @@ class MicoRobot: public hardware_interface::RobotHW
             pos[2] = degreesToRadians(double(90.0-arm_pos.Actuators.Actuator3));
             pos[3] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator4));
             pos[4] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator5)); 
-            pos[5] = degreesToRadians(double(arm_pos.Actuators.Actuator6));
+            pos[5] = degreesToRadians(double(270.0-arm_pos.Actuators.Actuator6));
             pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1)); // needs some offset, find out
             pos[7] = degreesToRadians(double(arm_pos.Fingers.Finger2));
             
