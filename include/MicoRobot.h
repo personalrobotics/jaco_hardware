@@ -240,12 +240,14 @@ class MicoRobot: public hardware_interface::RobotHW
             
             AngularInfo joint_pos;
             joint_pos.InitStruct();
-            joint_pos.Actuator1 = float(radiansToDegrees(command.at(0) - pos_offsets[0]));
-            joint_pos.Actuator2 = float(radiansToDegrees(command.at(1) - pos_offsets[1]));
-            joint_pos.Actuator3 = float(radiansToDegrees(command.at(2) - pos_offsets[2]));
-            joint_pos.Actuator4 = float(radiansToDegrees(command.at(3) - pos_offsets[3]));
-            joint_pos.Actuator5 = float(radiansToDegrees(command.at(4) - pos_offsets[4]));
-            joint_pos.Actuator6 = float(radiansToDegrees(command.at(5) - pos_offsets[5]));
+            
+            // The crazy weird position changes are how Kinova does it in their driver node!! ><
+            joint_pos.Actuator1 = float(radiansToDegrees(180.0-command.at(0)));
+            joint_pos.Actuator2 = float(radiansToDegrees(command.at(1)+270.0));
+            joint_pos.Actuator3 = float(radiansToDegrees(90.0-command.at(2)));
+            joint_pos.Actuator4 = float(radiansToDegrees(180.0-command.at(3)));
+            joint_pos.Actuator5 = float(radiansToDegrees(180.0-command.at(4)));
+            joint_pos.Actuator6 = float(radiansToDegrees(command.at(5)) );
             
             TrajectoryPoint trajectory;
             trajectory.InitStruct(); // initialize structure
@@ -268,11 +270,12 @@ class MicoRobot: public hardware_interface::RobotHW
             
             AngularInfo joint_vel;
             joint_vel.InitStruct();
-            joint_vel.Actuator1 = float(radiansToDegrees(command.at(0)));
+            // Don't ask me why all the joint velocities are negative, I have no idea.
+            joint_vel.Actuator1 = -float(radiansToDegrees(command.at(0)));
             joint_vel.Actuator2 = float(radiansToDegrees(command.at(1)));
-            joint_vel.Actuator3 = float(radiansToDegrees(command.at(2)));
-            joint_vel.Actuator4 = float(radiansToDegrees(command.at(3)));
-            joint_vel.Actuator5 = float(radiansToDegrees(command.at(4)));
+            joint_vel.Actuator3 = -float(radiansToDegrees(command.at(2)));
+            joint_vel.Actuator4 = -float(radiansToDegrees(command.at(3)));
+            joint_vel.Actuator5 = -float(radiansToDegrees(command.at(4)));
             joint_vel.Actuator6 = float(radiansToDegrees(command.at(5)));
             
             TrajectoryPoint trajectory;
@@ -343,15 +346,15 @@ class MicoRobot: public hardware_interface::RobotHW
                 if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
                 {
                     all_in_limits = false;
-                    ROS_ERROR("Exceeded soft effort limits on joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
+                    ROS_WARN("Exceeded soft effort limits on joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
+                    /*
                     if (!eff_stall)
                     {
+                        ROS_INFO("Erasing all trajectory points")
+                        EraseAllTrajectories();
                         ROS_INFO("Sending zero velocities");
                         sendVelocityCommand(zero_velocity_command);
-                        ROS_INFO("Entering force_control mode.");
-                        eff_stall = true;
-                        //arm->start_force_ctrl();
-                    }
+                    }*/
                 }
             }
 
@@ -382,13 +385,14 @@ class MicoRobot: public hardware_interface::RobotHW
             GetAngularVelocity(arm_vel);
             GetForcesInfo(arm_torq);
             
-            pos[0] = degreesToRadians(double(arm_pos.Actuators.Actuator1));
-            pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2));
-            pos[2] = degreesToRadians(double(arm_pos.Actuators.Actuator3));
-            pos[3] = degreesToRadians(double(arm_pos.Actuators.Actuator4));
-            pos[4] = degreesToRadians(double(arm_pos.Actuators.Actuator5));
+            // The crazy weird position changes are how Kinova does it in their driver node!! ><
+            pos[0] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator1));
+            pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2-270.0));
+            pos[2] = degreesToRadians(double(90.0-arm_pos.Actuators.Actuator3));
+            pos[3] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator4));
+            pos[4] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator5)); 
             pos[5] = degreesToRadians(double(arm_pos.Actuators.Actuator6));
-            pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1));
+            pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1)); // needs some offset, find out
             pos[7] = degreesToRadians(double(arm_pos.Fingers.Finger2));
             
             vel[0] = degreesToRadians(double(arm_vel.Actuators.Actuator1));
