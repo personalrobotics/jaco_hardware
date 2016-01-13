@@ -276,7 +276,7 @@ class MicoRobot: public hardware_interface::RobotHW
             joint_vel.Actuator3 = -float(radiansToDegrees(command.at(2)));
             joint_vel.Actuator4 = -float(radiansToDegrees(command.at(3)));
             joint_vel.Actuator5 = -float(radiansToDegrees(command.at(4)));
-            joint_vel.Actuator6 = float(radiansToDegrees(command.at(5)));
+            joint_vel.Actuator6 = -float(radiansToDegrees(command.at(5)));
             
             TrajectoryPoint trajectory;
             trajectory.InitStruct(); // initialize structure
