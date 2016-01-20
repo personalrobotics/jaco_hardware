@@ -16,14 +16,16 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS system)
 link_directories(${PROJECT_SOURCE_DIR}/lib/${CMAKE_LIBRARY_ARCHITECTURE})
 
+
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS
+    include
   CATKIN_DEPENDS
-  std_msgs
-  roscpp
-  controller_manager
-  hardware_interface
-  sensor_msgs
+    std_msgs
+    roscpp
+    controller_manager
+    hardware_interface
+    sensor_msgs
 )
 
 ###########
@@ -32,7 +34,12 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(
+  include
+  ${Boost_INCLUDE_DIRS}
+  ${libkindrv_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp library
 # add_library(mico_hardware
@@ -40,7 +47,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 # )
 
 ## Declare a cpp executable
- add_executable(mico_hardware src/main.cpp)
+add_executable(mico_hardware src/main.cpp src/MicoRobot.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -58,7 +65,5 @@ set(KINOVA_ARM_LIBS
    ${Boost_LIBRARIES}
    ${KINOVA_ARM_LIBS}
  )
- 
- 
- 
+
 
