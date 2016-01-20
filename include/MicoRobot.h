@@ -13,9 +13,9 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 
-// libkindrv
-#include <libkindrv/types.h>
-#include <libkindrv/kindrv.h>
+// kinova api
+#include <kinova/KinovaTypes.h>
+#include <kinova/Kinova.API.UsbCommandLayerUbuntu.h>
 
 // c++
 #include <stdexcept>
@@ -23,13 +23,10 @@
 #include <iostream>
 
 using namespace std;
-using namespace KinDrv;
 
-static const double hardcoded_pos_offsets[6] = { M_PI, 0.5 * M_PI, -0.5 * M_PI, M_PI, M_PI, 0.0 };
 static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
-
 
 class MicoRobot: public hardware_interface::RobotHW
 {
@@ -50,16 +47,13 @@ class MicoRobot: public hardware_interface::RobotHW
         inline double fingerTicksToRadians(double ticks);
 
         void sendPositionCommand(const std::vector<double>& command);
-
         void sendVelocityCommand(const std::vector<double>& command);
+        void sendTorqueCommand(const std::vector<double>& command);
 
         void write(void);
-
-        jaco_position_t returnPos(void);
-
-        void checkForStall();
-
         void read(void);
+
+        void checkForStall(void);
 
         bool eff_stall;
 
@@ -69,7 +63,7 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::PositionJointInterface jnt_pos_interface;
         hardware_interface::JointModeInterface jm_interface;
 
-        JacoArm *arm;
+        //JacoArm *arm;
         vector<double> cmd_pos;
         vector<double>  cmd_vel;
         vector<double>  pos;
@@ -83,3 +77,4 @@ class MicoRobot: public hardware_interface::RobotHW
 };
 
 #endif
+
