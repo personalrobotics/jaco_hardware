@@ -205,9 +205,6 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular position
     
-    // Here the pos_offsets are just to avoid the arm "unwinding" back to zero when we 
-    // first use position control since that might cause unintended effects.
-    
     AngularInfo joint_pos;
     joint_pos.InitStruct();
     
@@ -363,8 +360,8 @@ void MicoRobot::read(void)
     pos[3] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator4));
     pos[4] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator5)); 
     pos[5] = degreesToRadians(double(270.0-arm_pos.Actuators.Actuator6));
-    pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1)); // needs some offset, find out
-    pos[7] = degreesToRadians(double(arm_pos.Fingers.Finger2));
+    pos[6] = double(arm_pos.Fingers.Finger1/5400);//degreesToRadians(double(arm_pos.Fingers.Finger1)); // needs some offset, find out
+    pos[7] = double(arm_pos.Fingers.Finger2/5400);//degreesToRadians(double(arm_pos.Fingers.Finger2));
     
     vel[0] = degreesToRadians(double(arm_vel.Actuators.Actuator1));
     vel[1] = degreesToRadians(double(arm_vel.Actuators.Actuator2));
