@@ -17,14 +17,15 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
     // connect and register the joint state interface.
     // this gives joint states (pos, vel, eff) back as an output.
-    hardware_interface::JointStateHandle state_handle_base("mico_joint_1", &pos[0], &vel[0], &eff[0]);
-    hardware_interface::JointStateHandle state_handle_shoulder("mico_joint_2", &pos[1], &vel[1], &eff[1]);
-    hardware_interface::JointStateHandle state_handle_elbow("mico_joint_3", &pos[2], &vel[2], &eff[2]);
-    hardware_interface::JointStateHandle state_handle_wrist0("mico_joint_4", &pos[3], &vel[3], &eff[3]);
-    hardware_interface::JointStateHandle state_handle_wrist1("mico_joint_5", &pos[4], &vel[4], &eff[4]);
-    hardware_interface::JointStateHandle state_handle_wrist2("mico_joint_6", &pos[5], &vel[5], &eff[5]);
-    hardware_interface::JointStateHandle state_handle_finger0("mico_joint_finger_1", &pos[6], &vel[6], &eff[6]);
-    hardware_interface::JointStateHandle state_handle_finger1("mico_joint_finger_2", &pos[7], &vel[7], &eff[7]);
+    hardware_interface::JointStateHandle state_handle_base("j2n6a300_joint_1", &pos[0], &vel[0], &eff[0]);
+    hardware_interface::JointStateHandle state_handle_shoulder("j2n6a300_joint_2", &pos[1], &vel[1], &eff[1]);
+    hardware_interface::JointStateHandle state_handle_elbow("j2n6a300_joint_3", &pos[2], &vel[2], &eff[2]);
+    hardware_interface::JointStateHandle state_handle_wrist0("j2n6a300_joint_4", &pos[3], &vel[3], &eff[3]);
+    hardware_interface::JointStateHandle state_handle_wrist1("j2n6a300_joint_5", &pos[4], &vel[4], &eff[4]);
+    hardware_interface::JointStateHandle state_handle_wrist2("j2n6a300_joint_6", &pos[5], &vel[5], &eff[5]);
+    hardware_interface::JointStateHandle state_handle_finger0("j2n6a300_joint_finger_1", &pos[6], &vel[6], &eff[6]);
+    hardware_interface::JointStateHandle state_handle_finger1("j2n6a300_joint_finger_2", &pos[7], &vel[7], &eff[7]);
+    hardware_interface::JointStateHandle state_handle_finger2("j2n6a300_joint_finger_3", &pos[8], &vel[8], &eff[8]);
 
     jnt_state_interface.registerHandle(state_handle_base);
     jnt_state_interface.registerHandle(state_handle_shoulder);
@@ -34,19 +35,21 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     jnt_state_interface.registerHandle(state_handle_wrist2);
     jnt_state_interface.registerHandle(state_handle_finger0);
     jnt_state_interface.registerHandle(state_handle_finger1);
+    jnt_state_interface.registerHandle(state_handle_finger2);
 
     registerInterface(&jnt_state_interface);
 
     // connect and register the joint position interface
     // this takes joint velocities in as a command.
-    hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("mico_joint_1"), &cmd_vel[0]);
-    hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("mico_joint_2"), &cmd_vel[1]);
-    hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("mico_joint_3"), &cmd_vel[2]);
-    hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("mico_joint_4"), &cmd_vel[3]);
-    hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("mico_joint_5"), &cmd_vel[4]);
-    hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("mico_joint_6"), &cmd_vel[5]);
-    hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("mico_joint_finger_1"), &cmd_vel[6]);
-    hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("mico_joint_finger_2"), &cmd_vel[7]);
+    hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("j2n6a300_joint_1"), &cmd_vel[0]);
+    hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("j2n6a300_joint_2"), &cmd_vel[1]);
+    hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("j2n6a300_joint_3"), &cmd_vel[2]);
+    hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("j2n6a300_joint_4"), &cmd_vel[3]);
+    hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("j2n6a300_joint_5"), &cmd_vel[4]);
+    hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("j2n6a300_joint_6"), &cmd_vel[5]);
+    hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("j2n6a300_joint_finger_1"), &cmd_vel[6]);
+    hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("j2n6a300_joint_finger_2"), &cmd_vel[7]);
+    hardware_interface::JointHandle vel_handle_finger2(jnt_state_interface.getHandle("j2n6a300_joint_finger_3"), &cmd_vel[8]);
 
     jnt_vel_interface.registerHandle(vel_handle_base);
     jnt_vel_interface.registerHandle(vel_handle_shoulder);
@@ -56,19 +59,21 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     jnt_vel_interface.registerHandle(vel_handle_wrist2);
     jnt_vel_interface.registerHandle(vel_handle_finger0);
     jnt_vel_interface.registerHandle(vel_handle_finger1);
+    jnt_vel_interface.registerHandle(vel_handle_finger2);
 
     registerInterface(&jnt_vel_interface);
 
     // connect and register the joint position interface
     // this takes joint positions in as a command.
-    hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("mico_joint_1"), &cmd_pos[0]);
-    hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("mico_joint_2"), &cmd_pos[1]);
-    hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("mico_joint_3"), &cmd_pos[2]);
-    hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("mico_joint_4"), &cmd_pos[3]);
-    hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("mico_joint_5"), &cmd_pos[4]);
-    hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("mico_joint_6"), &cmd_pos[5]);
-    hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("mico_joint_finger_1"), &cmd_pos[6]);
-    hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("mico_joint_finger_2"), &cmd_pos[7]);
+    hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("j2n6a300_joint_1"), &cmd_pos[0]);
+    hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("j2n6a300_joint_2"), &cmd_pos[1]);
+    hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("j2n6a300_joint_3"), &cmd_pos[2]);
+    hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("j2n6a300_joint_4"), &cmd_pos[3]);
+    hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("j2n6a300_joint_5"), &cmd_pos[4]);
+    hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("j2n6a300_joint_6"), &cmd_pos[5]);
+    hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("j2n6a300_joint_finger_1"), &cmd_pos[6]);
+    hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("j2n6a300_joint_finger_2"), &cmd_pos[7]);
+    hardware_interface::JointHandle pos_handle_finger2(jnt_state_interface.getHandle("j2n6a300_joint_finger_3"), &cmd_pos[8]);
 
     jnt_pos_interface.registerHandle(pos_handle_base);
     jnt_pos_interface.registerHandle(pos_handle_shoulder);
@@ -78,6 +83,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     jnt_pos_interface.registerHandle(pos_handle_wrist2);
     jnt_pos_interface.registerHandle(pos_handle_finger0);
     jnt_pos_interface.registerHandle(pos_handle_finger1);
+    jnt_pos_interface.registerHandle(pos_handle_finger2);
 
     registerInterface(&jnt_pos_interface);
 
@@ -116,7 +122,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     if (nh.hasParam("soft_limits/eff"))
     {
         nh.getParam("soft_limits/eff", soft_limits);
-        ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]", soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3], soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);
+        ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f,%f]", soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3], soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7], soft_limits[8]);
     }
     else
     {
@@ -209,11 +215,11 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
     joint_pos.InitStruct();
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
-    joint_pos.Actuator1 = float(radiansToDegrees(180.0-command.at(0)));
-    joint_pos.Actuator2 = float(radiansToDegrees(command.at(1)+270.0));
-    joint_pos.Actuator3 = float(radiansToDegrees(90.0-command.at(2)));
-    joint_pos.Actuator4 = float(radiansToDegrees(180.0-command.at(3)));
-    joint_pos.Actuator5 = float(radiansToDegrees(180.0-command.at(4)));
+    joint_pos.Actuator1 = float(radiansToDegrees(command.at(0)));
+    joint_pos.Actuator2 = float(radiansToDegrees(command.at(1)));
+    joint_pos.Actuator3 = float(radiansToDegrees(command.at(2)));
+    joint_pos.Actuator4 = float(radiansToDegrees(command.at(3)));
+    joint_pos.Actuator5 = float(radiansToDegrees(command.at(4)));
     joint_pos.Actuator6 = float(radiansToDegrees(command.at(5)) );
     
     TrajectoryPoint trajectory;
@@ -240,12 +246,12 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     AngularInfo joint_vel;
     joint_vel.InitStruct();
     // Don't ask me why all the joint velocities are negative, I have no idea.
-    joint_vel.Actuator1 = -float(radiansToDegrees(command.at(0)));
+    joint_vel.Actuator1 = float(radiansToDegrees(command.at(0)));
     joint_vel.Actuator2 = float(radiansToDegrees(command.at(1)));
-    joint_vel.Actuator3 = -float(radiansToDegrees(command.at(2)));
-    joint_vel.Actuator4 = -float(radiansToDegrees(command.at(3)));
-    joint_vel.Actuator5 = -float(radiansToDegrees(command.at(4)));
-    joint_vel.Actuator6 = -float(radiansToDegrees(command.at(5)));
+    joint_vel.Actuator3 = float(radiansToDegrees(command.at(2)));
+    joint_vel.Actuator4 = float(radiansToDegrees(command.at(3)));
+    joint_vel.Actuator5 = float(radiansToDegrees(command.at(4)));
+    joint_vel.Actuator6 = float(radiansToDegrees(command.at(5)));
     
     TrajectoryPoint trajectory;
     trajectory.InitStruct(); // initialize structure
@@ -257,6 +263,7 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     trajectory.Position.Type = ANGULAR_VELOCITY;
     trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
     trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
+    trajectory.Position.Fingers.Finger3 = float(radiansToFingerTicks(command.at(8)));
     //trajectory.Position.Delay = 0.0;
 
     
@@ -363,14 +370,15 @@ void MicoRobot::read(void)
     GetForcesInfo(arm_torq);
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
-    pos[0] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator1));
-    pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2-260.0));    //kinova-ros/jaco_driver/src/jaco_arm used 260 instead of 270, so switched
-    pos[2] = degreesToRadians(double(90.0-arm_pos.Actuators.Actuator3));
-    pos[3] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator4));
-    pos[4] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator5)); 
-    pos[5] = degreesToRadians(double(270.0-arm_pos.Actuators.Actuator6));
+    pos[0] = degreesToRadians(double(arm_pos.Actuators.Actuator1));
+    pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2));    //kinova-ros/jaco_driver/src/jaco_arm used 260 instead of 270, so switched
+    pos[2] = degreesToRadians(double(arm_pos.Actuators.Actuator3));
+    pos[3] = degreesToRadians(double(arm_pos.Actuators.Actuator4));
+    pos[4] = degreesToRadians(double(arm_pos.Actuators.Actuator5)); 
+    pos[5] = degreesToRadians(double(arm_pos.Actuators.Actuator6));
     pos[6] = fingerTicksToRadians(double(arm_pos.Fingers.Finger1));
     pos[7] = fingerTicksToRadians(double(arm_pos.Fingers.Finger2));
+    pos[8] = fingerTicksToRadians(double(arm_pos.Fingers.Finger3));
     
     vel[0] = degreesToRadians(double(arm_vel.Actuators.Actuator1));
     vel[1] = degreesToRadians(double(arm_vel.Actuators.Actuator2));
@@ -380,6 +388,7 @@ void MicoRobot::read(void)
     vel[5] = degreesToRadians(double(arm_vel.Actuators.Actuator6));
     vel[6] = fingerTicksToRadians(double(arm_vel.Fingers.Finger1)); //note: these are set to zero in the kinova ros code
     vel[7] = fingerTicksToRadians(double(arm_vel.Fingers.Finger2));
+    vel[8] = fingerTicksToRadians(double(arm_vel.Fingers.Finger3));
 
     eff[0] = degreesToRadians(double(arm_torq.Actuator1));
     eff[1] = degreesToRadians(double(arm_torq.Actuator2));
@@ -389,6 +398,7 @@ void MicoRobot::read(void)
     eff[5] = degreesToRadians(double(arm_torq.Actuator6));
     eff[6] = 0;
     eff[7] = 0;
+    eff[8] = 0;
     
     checkForStall();
     

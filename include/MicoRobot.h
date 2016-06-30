@@ -25,7 +25,7 @@
 using namespace std;
 
 static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
-static const int num_full_dof = 8;
+static const int num_full_dof = 9;
 static const int num_arm_dof = 6;
 
 class MicoRobot: public hardware_interface::RobotHW
