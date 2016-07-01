@@ -198,12 +198,12 @@ inline double MicoRobot::radiansToDegrees(double radians)
 
 inline double MicoRobot::radiansToFingerTicks(double radians)
 {
-    return (5400.0/0.7) * radians; //this magic number was found in the kinova-ros code, jaco_driver/src/jaco_arm.cpp
+    return (6400.0/1.4) * radians; //this magic number was found in the kinova-ros code, jaco_driver/src/jaco_arm.cpp
 }
 
 inline double MicoRobot::fingerTicksToRadians(double ticks)
 {
-    return ticks * (0.7/5400.0);  //this magic number was found in the kinova-ros code, jaco_driver/src/jaco_arm.cpp
+    return ticks * (1.4/6400.0);  //this magic number was found in the kinova-ros code, jaco_driver/src/jaco_arm.cpp
 }
 
 void MicoRobot::sendPositionCommand(const std::vector<double>& command)
@@ -261,9 +261,9 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
 
     trajectory.Position.HandMode = VELOCITY_MODE;
     trajectory.Position.Type = ANGULAR_VELOCITY;
-    trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
-    trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
-    trajectory.Position.Fingers.Finger3 = float(radiansToFingerTicks(command.at(8)));
+    trajectory.Position.Fingers.Finger1 = float(radiansToDegrees(command.at(6)));
+    trajectory.Position.Fingers.Finger2 = float(radiansToDegrees(command.at(7)));
+    trajectory.Position.Fingers.Finger3 = float(radiansToDegrees(command.at(8)));
     //trajectory.Position.Delay = 0.0;
 
     
@@ -376,9 +376,9 @@ void MicoRobot::read(void)
     pos[3] = degreesToRadians(double(arm_pos.Actuators.Actuator4));
     pos[4] = degreesToRadians(double(arm_pos.Actuators.Actuator5)); 
     pos[5] = degreesToRadians(double(arm_pos.Actuators.Actuator6));
-    pos[6] = fingerTicksToRadians(double(arm_pos.Fingers.Finger1));
-    pos[7] = fingerTicksToRadians(double(arm_pos.Fingers.Finger2));
-    pos[8] = fingerTicksToRadians(double(arm_pos.Fingers.Finger3));
+    pos[6] = degreesToRadians(double(arm_pos.Fingers.Finger1));
+    pos[7] = degreesToRadians(double(arm_pos.Fingers.Finger2));
+    pos[8] = degreesToRadians(double(arm_pos.Fingers.Finger3));
     
     vel[0] = degreesToRadians(double(arm_vel.Actuators.Actuator1));
     vel[1] = degreesToRadians(double(arm_vel.Actuators.Actuator2));
@@ -386,9 +386,9 @@ void MicoRobot::read(void)
     vel[3] = degreesToRadians(double(arm_vel.Actuators.Actuator4));
     vel[4] = degreesToRadians(double(arm_vel.Actuators.Actuator5));
     vel[5] = degreesToRadians(double(arm_vel.Actuators.Actuator6));
-    vel[6] = fingerTicksToRadians(double(arm_vel.Fingers.Finger1)); //note: these are set to zero in the kinova ros code
-    vel[7] = fingerTicksToRadians(double(arm_vel.Fingers.Finger2));
-    vel[8] = fingerTicksToRadians(double(arm_vel.Fingers.Finger3));
+    vel[6] = degreesToRadians(double(arm_vel.Fingers.Finger1)); //note: these are set to zero in the kinova ros code
+    vel[7] = degreesToRadians(double(arm_vel.Fingers.Finger2));
+    vel[8] = degreesToRadians(double(arm_vel.Fingers.Finger3));
 
     eff[0] = degreesToRadians(double(arm_torq.Actuator1));
     eff[1] = degreesToRadians(double(arm_torq.Actuator2));
