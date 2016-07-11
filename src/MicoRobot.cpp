@@ -83,7 +83,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
     // connect and register the joint mode interface
     // this is needed to determine if velocity or position control is needed.
-    hardware_interface::JointModeHandle mode_handle("joint_mode", &joint_mode);
+    pr_ros_controllers::JointModeHandle mode_handle("joint_mode", &joint_mode);
     jm_interface.registerHandle(mode_handle);
 
     registerInterface(&jm_interface);
@@ -130,7 +130,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     // initialize default positions
     initializeOffsets();
 
-    last_mode = hardware_interface::MODE_VELOCITY;
+    last_mode = pr_ros_controllers::MODE_VELOCITY;
 }
 
 MicoRobot::~MicoRobot()
@@ -287,7 +287,7 @@ void MicoRobot::write(void)
     switch (joint_mode)
     {
         // send joint position commands
-        case hardware_interface::MODE_POSITION:
+        case pr_ros_controllers::MODE_POSITION:
         {
             sendPositionCommand(cmd_pos);
             break;
@@ -295,13 +295,13 @@ void MicoRobot::write(void)
 
         // send joint velocity commands.
         // To send joint velocities, we have to send it a trajectory point in angular mode.
-        case hardware_interface::MODE_VELOCITY:
+        case pr_ros_controllers::MODE_VELOCITY:
         {
             sendVelocityCommand(cmd_vel);
             break;
         }
 
-        case hardware_interface::MODE_EFFORT:
+        case pr_ros_controllers::MODE_EFFORT:
         {
             ROS_WARN_THROTTLE(1.0, "Mico hardware does not support effort control.");
             break;

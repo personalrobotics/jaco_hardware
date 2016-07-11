@@ -61,7 +61,7 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::JointStateInterface jnt_state_interface;
         hardware_interface::VelocityJointInterface jnt_vel_interface;
         hardware_interface::PositionJointInterface jnt_pos_interface;
-        hardware_interface::JointModeInterface jm_interface;
+        pr_ros_controllers::JointModeInterface jm_interface;
 
         //JacoArm *arm;
         vector<double> cmd_pos;
