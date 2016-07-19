@@ -5,6 +5,7 @@ using namespace std;
 
 MicoRobot::MicoRobot(ros::NodeHandle nh)
 {
+    ROS_INFO("Starting to initialize mico_hardware");
     int i;
     cmd_pos.resize(num_full_dof);
     cmd_vel.resize(num_full_dof);
@@ -92,25 +93,29 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     // Start Up Kinova API
     int r = NO_ERROR_KINOVA;
     
+    ROS_INFO("Attempting to inialize API...");
     r = InitAPI();
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not initialize API: Error code %d",r);
     }
     
+    ROS_INFO("Attempting to start API control of the robot...");
     r = StartControlAPI();
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not start API Control: Error code %d",r);
     }
     
+    ROS_INFO("Attempting to set angular control...");
     r = SetAngularControl();
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not set angular control: Error code %d",r);
     }
     
+    /*ROS_INFO("Attempting to set force control mode...");
     r = StartForceControl();
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not start force control: Error code %d",r);
-    }
+    }*/
     
     // get soft limits from rosparams
     if (nh.hasParam("soft_limits/eff"))
@@ -317,9 +322,12 @@ void MicoRobot::checkForStall(void)
     // this way the arm can move easily. (if we sent it zero commands, it
     // would still be hitting whatever it was.
 
+    int i = 1;
+    ROS_INFO("joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
     bool all_in_limits = true;
     for (int i = 0; i < num_full_dof; i++)
     {
+        
         if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
         {
             all_in_limits = false;
@@ -381,12 +389,12 @@ void MicoRobot::read(void)
     vel[6] = fingerTicksToRadians(double(arm_vel.Fingers.Finger1)); //note: these are set to zero in the kinova ros code
     vel[7] = fingerTicksToRadians(double(arm_vel.Fingers.Finger2));
 
-    eff[0] = degreesToRadians(double(arm_torq.Actuator1));
-    eff[1] = degreesToRadians(double(arm_torq.Actuator2));
-    eff[2] = degreesToRadians(double(arm_torq.Actuator3));
-    eff[3] = degreesToRadians(double(arm_torq.Actuator4));
-    eff[4] = degreesToRadians(double(arm_torq.Actuator5));
-    eff[5] = degreesToRadians(double(arm_torq.Actuator6));
+    eff[0] = arm_torq.Actuator1;
+    eff[1] = arm_torq.Actuator2;
+    eff[2] = arm_torq.Actuator3;
+    eff[3] = arm_torq.Actuator4;
+    eff[4] = arm_torq.Actuator5;
+    eff[5] = arm_torq.Actuator6;
     eff[6] = 0;
     eff[7] = 0;
     
