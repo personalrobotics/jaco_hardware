@@ -340,6 +340,17 @@ void MicoRobot::checkForStall(void)
                 ROS_INFO("Sending zero velocities");
                 sendVelocityCommand(zero_velocity_command);
             }*/
+            // Start Up Kinova API
+            int r = NO_ERROR_KINOVA;
+            ROS_INFO("Set force control mode...");
+            r = StartForceControl();
+            if (r != NO_ERROR_KINOVA) {
+                ROS_ERROR("Could not start force control: Error code %d",r);
+            }
+            else{
+	        ROS_INFO("should be in force control mode.");
+	    }	
+ 
         }
     }
 
