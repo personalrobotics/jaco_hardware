@@ -155,6 +155,7 @@ void MicoRobot::initializeOffsets()
 {
     this->read();
 
+    ROS_INFO("init offset");
     // Next, we wrap the positions so they are within -pi to pi of
     // the hardcoded midpoints, and add that to the offset. TODO(mklingen):
     // figure out if this makes sense.
@@ -180,6 +181,7 @@ ros::Time MicoRobot::get_time(void)
 
 ros::Duration MicoRobot::get_period(void)
 {
+    ROS_INFO("getting period");
     // TODO(benwr): What is a reasonable period?
     // Here I've assumed  10ms
     return ros::Duration(0.01);
@@ -207,6 +209,7 @@ inline double MicoRobot::fingerTicksToRadians(double ticks)
 
 void MicoRobot::sendPositionCommand(const std::vector<double>& command)
 {
+    ROS_INFO("sending position");
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular position
     
@@ -239,6 +242,7 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
 
 void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
 {
+    ROS_INFO("sending velocity");
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular velocity
     
@@ -280,6 +284,7 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
 
 void MicoRobot::write(void)
 {
+    ROS_INFO("writing");
     if (last_mode != joint_mode)
     {
         EraseAllTrajectories();
@@ -340,20 +345,28 @@ void MicoRobot::checkForStall(void)
                 ROS_INFO("Sending zero velocities");
                 sendVelocityCommand(zero_velocity_command);
             }*/
-            // Start Up Kinova API
-            int r = NO_ERROR_KINOVA;
-            ROS_INFO("Set force control mode...");
-            r = StartForceControl();
-            if (r != NO_ERROR_KINOVA) {
-                ROS_ERROR("Could not start force control: Error code %d",r);
-            }
-            else{
-	        ROS_INFO("should be in force control mode.");
-	    }	
- 
         }
     }
 
+    if (!all_in_limits){
+        int r = NO_ERROR_KINOVA;
+        ROS_INFO("Set force control mode...");
+        int response = -100;
+        r = GetControlType(response);
+        ROS_INFO("control type = %d",response);
+
+        r = StopForceControl();
+        r = StartForceControl();
+        r = GetControlType(response);
+        ROS_INFO("control type = %d",response);
+        if (r != NO_ERROR_KINOVA) {
+            ROS_ERROR("Could not start force control: Error code %d",r);
+        }
+        else{
+            ROS_INFO("should be in force control mode.");
+        }
+    }
+            
     if (all_in_limits && eff_stall)
     {
         eff_stall = false;
@@ -380,6 +393,8 @@ void MicoRobot::read(void)
     GetAngularPosition(arm_pos);
     GetAngularVelocity(arm_vel);
     GetForcesInfo(arm_torq);
+    
+    ROS_INFO("reading");
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
     pos[0] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator1));
