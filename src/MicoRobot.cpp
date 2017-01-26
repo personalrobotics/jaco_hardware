@@ -323,7 +323,7 @@ void MicoRobot::checkForStall(void)
     // would still be hitting whatever it was.
 
     int i = 1;
-    ROS_INFO("joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
+    //ROS_INFO("joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
     bool all_in_limits = true;
     for (int i = 0; i < num_full_dof; i++)
     {
