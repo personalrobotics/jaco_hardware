@@ -372,7 +372,7 @@ void MicoRobot::read(void)
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
     pos[0] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator1));
-    pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2-260.0));    //kinova-ros/jaco_driver/src/jaco_arm used 260 instead of 270, so switched
+    pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2-270.0));    //kinova-ros/jaco_driver/src/jaco_arm used 260 instead of 270, so switched
     pos[2] = degreesToRadians(double(90.0-arm_pos.Actuators.Actuator3));
     pos[3] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator4));
     pos[4] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator5)); 
