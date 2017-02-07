@@ -97,8 +97,9 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
 
     // Start Up Kinova API
-    int r = NO_ERROR_KINOVA;
+    int r = NO_ERROR_KINOVA; // TODO: name this something other than "r" - maybe "error" or "errorCode"
     
+    // TODO: Change ROS_ERROR to ROS_FATAL which will kill the process
     ROS_INFO("Attempting to inialize API...");
     r = InitAPI();
     if (r != NO_ERROR_KINOVA) {
@@ -132,11 +133,11 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     else
     {
         ROS_ERROR("No soft limits set for the MICO!");
-        throw std::runtime_error("no soft limits set for the MICO!");
+        throw std::runtime_error("no soft limits set for the MICO!"); // TODO: figure out implications of this; if you can't recover, don't bother throwing it, just call ROS_FATAL (or be consistent with above); or figure out if this should be a warning instead of an error
     }
 
     // set stall
-    eff_stall = false;
+    eff_stall = false; // TODO: here it is again
 
     // initialize default positions
     initializeOffsets();
@@ -159,7 +160,7 @@ MicoRobot::~MicoRobot()
 
 void MicoRobot::initializeOffsets()
 {
-    this->read();
+    this->read(); // TODO: "this" unnecessary; also, this may need dummy values if the arguments are changed in the header file
 
     // Next, we wrap the positions so they are within -pi to pi of
     // the hardcoded midpoints, and add that to the offset. TODO(mklingen):
@@ -179,11 +180,13 @@ void MicoRobot::initializeOffsets()
     }
 }
 
+// TODO: why does this exist? is it used? if not, delete
 ros::Time MicoRobot::get_time(void)
 {
     return ros::Time::now();
 }
 
+// TODO: change name to getDefaultPeriod - is this ever called? if not, delete
 ros::Duration MicoRobot::get_period(void)
 {
     // TODO(benwr): What is a reasonable period?
@@ -191,6 +194,7 @@ ros::Duration MicoRobot::get_period(void)
     return ros::Duration(0.01);
 }
 
+// TODO: replace next two functions with ROS versions
 inline double MicoRobot::degreesToRadians(double degrees)
 {
     return (M_PI / 180.0) * degrees;
@@ -201,6 +205,7 @@ inline double MicoRobot::radiansToDegrees(double radians)
     return (180.0 / M_PI) * radians;
 }
 
+// TODO: check this magic number against the magic number that Kinova told us; for the next two functions
 inline double MicoRobot::radiansToFingerTicks(double radians)
 {
     return (5400.0/0.7) * radians; //this magic number was found in the kinova-ros code, jaco_driver/src/jaco_arm.cpp
@@ -220,13 +225,15 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
     joint_pos.InitStruct();
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
-    joint_pos.Actuator1 = float(radiansToDegrees(180.0-command.at(0)));
-    joint_pos.Actuator2 = float(radiansToDegrees(command.at(1)+270.0));
-    joint_pos.Actuator3 = float(radiansToDegrees(90.0-command.at(2)));
-    joint_pos.Actuator4 = float(radiansToDegrees(180.0-command.at(3)));
-    joint_pos.Actuator5 = float(radiansToDegrees(180.0-command.at(4)));
+    joint_pos.Actuator1 = float(radiansToDegrees(180.0-command.at(0))); // TODO: this seems to be using degrees....
+    joint_pos.Actuator2 = float(radiansToDegrees(command.at(1)+270.0)); //       Is this the right function??
+    joint_pos.Actuator3 = float(radiansToDegrees(90.0-command.at(2)));  //       Since this is totally untested, delete this 
+    joint_pos.Actuator4 = float(radiansToDegrees(180.0-command.at(3))); //       entire function, and add as potential feature
+    joint_pos.Actuator5 = float(radiansToDegrees(180.0-command.at(4))); //       in GitHub with link here.
     joint_pos.Actuator6 = float(radiansToDegrees(command.at(5)) );
     
+    // TODO: zeroing out this TrajectoryPoint is sketchy, because we overwrite whatever InitStruct did
+    //       Instead, make a function that returns a clean TrajectoryPoint that can be called 
     TrajectoryPoint trajectory;
     trajectory.InitStruct(); // initialize structure
     memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
@@ -258,6 +265,7 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     joint_vel.Actuator5 = -float(radiansToDegrees(command.at(4)));
     joint_vel.Actuator6 = -float(radiansToDegrees(command.at(5)));
     
+    // TODO: use a function that returns a clean TrajectoryPoint instead of doing this
     TrajectoryPoint trajectory;
     trajectory.InitStruct(); // initialize structure
     memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
@@ -268,7 +276,7 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     trajectory.Position.Type = ANGULAR_VELOCITY;
     trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
     trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
-    //trajectory.Position.Delay = 0.0;
+    //trajectory.Position.Delay = 0.0; // TODO: delete dead code
 
     
     int r = NO_ERROR_KINOVA;
@@ -282,6 +290,7 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
 {
     // TODO
     //SendAngularTorqueCommand()
+    // TODO: delete if this isn't going to be implemented.
 }
 
 // TODO: change argument to match override
@@ -380,6 +389,7 @@ void MicoRobot::read(void)
     GetForcesInfo(arm_torq);
     
     // The crazy weird position changes are how Kinova does it in their driver node!! ><
+    // TODO: try getting rid of "double" here
     pos[0] = degreesToRadians(double(180.0-arm_pos.Actuators.Actuator1));
     pos[1] = degreesToRadians(double(arm_pos.Actuators.Actuator2-270.0));    //kinova-ros/jaco_driver/src/jaco_arm used 260 instead of 270, so switched
     pos[2] = degreesToRadians(double(90.0-arm_pos.Actuators.Actuator3));
