@@ -28,7 +28,13 @@ static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI,
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
 
-class MicoRobot: public hardware_interface::RobotHW
+// TODO: add explicit override keyword when appropriate (probably write and read)
+// TODO: change get_time to getTime and get_period to getPeriod, eff_stall to effStall 
+//      (i.e., make everything camel case except ROS package commands write and read)
+// TODO: decide if private variables should be camel case
+// TODO: get rid of "void" arguments (it's a holdover from C)
+// TODO: change write and read arguments to match override
+class MicoRobot: public hardware_interface::RobotHW  
 {
     public:
         MicoRobot(ros::NodeHandle nh);
