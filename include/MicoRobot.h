@@ -22,7 +22,7 @@
 #include <limits>
 #include <iostream>
 
-using namespace std;
+using namespace std; // TODO: remove this and propogate change
 
 static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
 static const int num_full_dof = 8;
