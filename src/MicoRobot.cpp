@@ -1,12 +1,18 @@
+// TODO: Remove old print statements, or use ros debug commands
+// TODO: Try compiling with C++11, if that works ask Clint about atomic check
+// TODO: delete all code related to eff_stall (or figure out why it's never being set to true, if it's returned somewhere else)
+//          - only meaningfully used in one place (near line 288)
+
+
 #include "MicoRobot.h"
 
-using namespace std;
+using namespace std; // TODO: delete this, propogate where needed
 
 
 MicoRobot::MicoRobot(ros::NodeHandle nh)
 {
     ROS_INFO("Starting to initialize mico_hardware");
-    int i;
+    int i; // TODO: mystery i -- figure out if we need this
     cmd_pos.resize(num_full_dof);
     cmd_vel.resize(num_full_dof);
     zero_velocity_command.resize(num_full_dof, 0.0);
@@ -278,6 +284,7 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
     //SendAngularTorqueCommand()
 }
 
+// TODO: change argument to match override
 void MicoRobot::write(void)
 {
     if (last_mode != joint_mode)
@@ -322,6 +329,7 @@ void MicoRobot::checkForStall(void)
     // this way the arm can move easily. (if we sent it zero commands, it
     // would still be hitting whatever it was.
 
+    // TODO: clean up (e.g., don't need "int i = 1;", comments, old print statements
     int i = 1;
     //ROS_INFO("joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
     bool all_in_limits = true;
@@ -353,6 +361,7 @@ void MicoRobot::checkForStall(void)
     }
 }
 
+// TODO: change arguments to match override
 void MicoRobot::read(void)
 {
     // make sure that pos, vel, and eff are up to date.
