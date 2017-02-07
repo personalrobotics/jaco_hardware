@@ -1,3 +1,8 @@
+<!-- TODO: 
+- delete comments
+- update maintainer and license
+- bump one minor version number
+-->
 <?xml version="1.0"?>
 <package>
   <name>mico_hardware</name>
