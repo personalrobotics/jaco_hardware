@@ -1,3 +1,5 @@
+## TODO: Check Kinova library license and add license blurb
+
 cmake_minimum_required(VERSION 2.8.3)
 project(mico_hardware)
 
