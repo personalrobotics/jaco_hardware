@@ -23,14 +23,14 @@ int main(int argc, char* argv[])
         robot.read();
         if (robot.eff_stall == true)
         {
-            cm.update(robot.get_time(), robot.get_period(), true);
+            cm.update(robot.getTime(), robot.getPeriod(), true);
         }
         else
         {
-            cm.update(robot.get_time(), robot.get_period());
+            cm.update(robot.getTime(), robot.getPeriod());
         }
 
-        robot.write();
+        robot.write(robot.getTime(), robot.getPeriod());
         controlRate.sleep();
     }
 

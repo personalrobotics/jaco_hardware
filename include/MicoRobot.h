@@ -22,20 +22,11 @@
 #include <limits>
 #include <iostream>
 
-using namespace std; // TODO: remove this and propogate change
+static const double HARDCODED_POS_MIDPOINTS[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
+static const int NUM_FULL_DOF = 8;
+static const int NUM_ARM_DOF = 6;
 
-// TODO: the static consts should be in all caps
-static const double hardcoded_pos_midpoints[6] = { 0.0, -0.5 * M_PI, 0.5 * M_PI, 0.0, 0.0, 0.0 };
-static const int num_full_dof = 8;
-static const int num_arm_dof = 6;
-
-// TODO: add explicit override keyword when appropriate (probably write and read)
-// TODO: change get_time to getTime and get_period to getPeriod, eff_stall to effStall 
-//      (i.e., make everything camel case except ROS package commands write and read)
-// TODO: decide if private variables should be camel case
-// TODO: get rid of "void" arguments (it's a holdover from C)
-// TODO: change write and read arguments to match override
-class MicoRobot: public hardware_interface::RobotHW  
+class MicoRobot final: public hardware_interface::RobotHW  
 {
     public:
         MicoRobot(ros::NodeHandle nh);
@@ -44,9 +35,9 @@ class MicoRobot: public hardware_interface::RobotHW
         
         void initializeOffsets();
         
-        ros::Time get_time(void);
+        ros::Time getTime();
 
-        ros::Duration get_period(void);
+        ros::Duration getPeriod();
 
         inline double degreesToRadians(double degrees);
         inline double radiansToDegrees(double radians);
@@ -57,10 +48,10 @@ class MicoRobot: public hardware_interface::RobotHW
         void sendVelocityCommand(const std::vector<double>& command);
         void sendTorqueCommand(const std::vector<double>& command);
 
-        void write(void);
-        void read(void);
+        void write(const ros::Time&, const ros::Duration&);
+        void read();
 
-        void checkForStall(void);
+        void checkForStall();
 
         bool eff_stall;
 
@@ -71,14 +62,14 @@ class MicoRobot: public hardware_interface::RobotHW
         hardware_interface::JointModeInterface jm_interface;
 
         //JacoArm *arm;
-        vector<double> cmd_pos;
-        vector<double>  cmd_vel;
-        vector<double>  pos;
-        vector<double>  vel;
-        vector<double>  eff;
-        vector<double>  pos_offsets;
-        vector<double>  soft_limits;
-        vector<double> zero_velocity_command;
+        std::vector<double> cmd_pos;
+        std::vector<double>  cmd_vel;
+        std::vector<double>  pos;
+        std::vector<double>  vel;
+        std::vector<double>  eff;
+        std::vector<double>  pos_offsets;
+        std::vector<double>  soft_limits;
+        std::vector<double> zero_velocity_command;
         int joint_mode; // this tells whether we're in position or velocity control mode
         int last_mode;
 };

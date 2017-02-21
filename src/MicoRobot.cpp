@@ -6,21 +6,18 @@
 
 #include "MicoRobot.h"
 
-using namespace std; // TODO: delete this, propogate where needed
-
-
 MicoRobot::MicoRobot(ros::NodeHandle nh)
 {
     ROS_INFO("Starting to initialize mico_hardware");
     int i; // TODO: mystery i -- figure out if we need this
-    cmd_pos.resize(num_full_dof);
-    cmd_vel.resize(num_full_dof);
-    zero_velocity_command.resize(num_full_dof, 0.0);
-    pos.resize(num_full_dof);
-    vel.resize(num_full_dof);
-    eff.resize(num_full_dof);
-    pos_offsets.resize(num_arm_dof);
-    soft_limits.resize(num_full_dof);
+    cmd_pos.resize(NUM_FULL_DOF);
+    cmd_vel.resize(NUM_FULL_DOF);
+    zero_velocity_command.resize(NUM_FULL_DOF, 0.0);
+    pos.resize(NUM_FULL_DOF);
+    vel.resize(NUM_FULL_DOF);
+    eff.resize(NUM_FULL_DOF);
+    pos_offsets.resize(NUM_ARM_DOF);
+    soft_limits.resize(NUM_FULL_DOF);
 
     // connect and register the joint state interface.
     // this gives joint states (pos, vel, eff) back as an output.
@@ -97,32 +94,25 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
 
     // Start Up Kinova API
-    int r = NO_ERROR_KINOVA; // TODO: name this something other than "r" - maybe "error" or "errorCode"
+    int errorCode = NO_ERROR_KINOVA;
     
-    // TODO: Change ROS_ERROR to ROS_FATAL which will kill the process
     ROS_INFO("Attempting to inialize API...");
-    r = InitAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not initialize API: Error code %d",r);
+    errorCode = InitAPI();
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_FATAL("Could not initialize API: Error code %d",errorCode);
     }
     
     ROS_INFO("Attempting to start API control of the robot...");
-    r = StartControlAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not start API Control: Error code %d",r);
+    errorCode = StartControlAPI();
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_FATAL("Could not start API Control: Error code %d",errorCode);
     }
     
     ROS_INFO("Attempting to set angular control...");
-    r = SetAngularControl();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not set angular control: Error code %d",r);
+    errorCode = SetAngularControl();
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_FATAL("Could not set angular control: Error code %d",errorCode);
     }
-    
-    /*ROS_INFO("Attempting to set force control mode...");
-    r = StartForceControl();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not start force control: Error code %d",r);
-    }*/
     
     // get soft limits from rosparams
     if (nh.hasParam("soft_limits/eff"))
@@ -132,8 +122,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     }
     else
     {
-        ROS_ERROR("No soft limits set for the MICO!");
-        throw std::runtime_error("no soft limits set for the MICO!"); // TODO: figure out implications of this; if you can't recover, don't bother throwing it, just call ROS_FATAL (or be consistent with above); or figure out if this should be a warning instead of an error
+        ROS_WARN("No soft limits set for the MICO!");
     }
 
     // set stall
@@ -147,14 +136,14 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
 MicoRobot::~MicoRobot()
 {
-    int r = NO_ERROR_KINOVA;
-    r = StopControlAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not stop API Control: Error code %d",r);
+    int errorCode = NO_ERROR_KINOVA;
+    errorCode = StopControlAPI();
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not stop API Control: Error code %d",errorCode);
     }
-    r = CloseAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not close API Control: Error code %d",r);
+    errorCode = CloseAPI();
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not close API Control: Error code %d",errorCode);
     }
 }
 
@@ -165,14 +154,14 @@ void MicoRobot::initializeOffsets()
     // Next, we wrap the positions so they are within -pi to pi of
     // the hardcoded midpoints, and add that to the offset. TODO(mklingen):
     // figure out if this makes sense.
-    for (int i = 0; i < num_arm_dof; i++)
+    for (int i = 0; i < NUM_ARM_DOF; i++)
     {
-        while (this->pos[i] < hardcoded_pos_midpoints[i] - M_PI)
+        while (this->pos[i] < HARDCODED_POS_MIDPOINTS[i] - M_PI)
         {
             this->pos[i] += 2.0 * M_PI;
             this->pos_offsets[i] += 2.0 * M_PI;
         }
-        while (this->pos[i] > hardcoded_pos_midpoints[i] + M_PI)
+        while (this->pos[i] > HARDCODED_POS_MIDPOINTS[i] + M_PI)
         {
             this->pos[i] -= 2.0 * M_PI;
             this->pos_offsets[i] -= 2.0 * M_PI;
@@ -181,13 +170,13 @@ void MicoRobot::initializeOffsets()
 }
 
 // TODO: why does this exist? is it used? if not, delete
-ros::Time MicoRobot::get_time(void)
+ros::Time MicoRobot::getTime(void)
 {
     return ros::Time::now();
 }
 
 // TODO: change name to getDefaultPeriod - is this ever called? if not, delete
-ros::Duration MicoRobot::get_period(void)
+ros::Duration MicoRobot::getPeriod(void)
 {
     // TODO(benwr): What is a reasonable period?
     // Here I've assumed  10ms
@@ -242,10 +231,10 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
     
     //trajectory.Position.FingersPosition
 
-    int r = NO_ERROR_KINOVA;
-    r = SendAdvanceTrajectory(trajectory);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
+    int errorCode = NO_ERROR_KINOVA;
+    errorCode = SendAdvanceTrajectory(trajectory);
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",errorCode);
     }
 
 }
@@ -279,10 +268,10 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     //trajectory.Position.Delay = 0.0; // TODO: delete dead code
 
     
-    int r = NO_ERROR_KINOVA;
-    r = SendAdvanceTrajectory(trajectory);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
+    int errorCode = NO_ERROR_KINOVA;
+    errorCode = SendAdvanceTrajectory(trajectory);
+    if (errorCode != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",errorCode);
     }
 }
 
@@ -294,7 +283,7 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
 }
 
 // TODO: change argument to match override
-void MicoRobot::write(void)
+void MicoRobot::write(const ros::Time &time, const ros::Duration &period)
 {
     if (last_mode != joint_mode)
     {
@@ -342,7 +331,7 @@ void MicoRobot::checkForStall(void)
     int i = 1;
     //ROS_INFO("joint %d. Limit=%f, Measured=%f", i, soft_limits[i], eff[i]);
     bool all_in_limits = true;
-    for (int i = 0; i < num_full_dof; i++)
+    for (int i = 0; i < NUM_FULL_DOF; i++)
     {
         
         if (eff[i] < -soft_limits[i] || eff[i] > soft_limits[i])
