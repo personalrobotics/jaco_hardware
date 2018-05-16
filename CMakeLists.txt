@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
     controller_manager
     hardware_interface
     pr_ros_controllers
+    pr_hardware_interfaces
     sensor_msgs
     )
 
@@ -55,8 +56,8 @@ add_executable(mico_hardware src/main.cpp src/MicoRobot.cpp)
 set(KINOVA_ARM_LIBS ${catkin_LIBRARIES})
 set(KINOVA_ARM_LIBS 
     ${KINOVA_ARM_LIBS}
-    -l:Kinova.API.CommLayerUbuntu.so
-    -l:Kinova.API.USBCommandLayerUbuntu.so)
+    -l:USBCommLayerUbuntu.so
+    -l:USBCommandLayerUbuntu.so)
 
 
 ## Specify libraries to link a library or executable target against

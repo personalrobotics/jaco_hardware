@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     ros::Rate controlRate(100.0);
     while (ros::ok())
     {
-        robot.read();
+        //robot.read();
         if (robot.eff_stall == true)
         {
             cm.update(robot.get_time(), robot.get_period(), true);
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
             cm.update(robot.get_time(), robot.get_period());
         }
 
-        robot.write();
+        // robot.write();
         controlRate.sleep();
     }
 
