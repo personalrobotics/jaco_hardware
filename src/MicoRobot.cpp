@@ -159,11 +159,11 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
         ROS_ERROR("Could not set angular control: Error code %d",r);
     }
     
-    ROS_INFO("Attempting to set force control mode...");
-    r = StartForceControl();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not start force control: Error code %d",r);
-    }
+    // ROS_INFO("Attempting to set force control mode...");
+    // r = StartForceControl();
+    // if (r != NO_ERROR_KINOVA) {
+    //    ROS_ERROR("Could not start force control: Error code %d",r);
+    // }
     
     // get soft limits from rosparams
     if (nh.hasParam("soft_limits/eff"))
@@ -180,7 +180,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
     }
 
     // initialize default positions
-    // initializeOffsets();
+    initializeOffsets();
 
     last_mode = hardware_interface::MODE_VELOCITY;
 
@@ -386,7 +386,7 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
 
 void MicoRobot::write(void)
 {
-    // sendVelocityCommand(cmd_vel);
+    sendVelocityCommand(cmd_vel);
 }
 
 void MicoRobot::checkForStall(void)
