@@ -7,7 +7,7 @@ using namespace std;
 MicoRobot::MicoRobot(ros::NodeHandle nh)
 : movehand_state(pr_hardware_interfaces::IDLE)
 {
-    ROS_INFO("Starting to initialize mico_hardware");
+    ROS_INFO("Starting to initialize jaco_hardware");
     int i;
     cmd_pos.resize(num_full_dof);
     cmd_vel.resize(num_full_dof);

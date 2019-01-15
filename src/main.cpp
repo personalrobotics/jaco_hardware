@@ -7,7 +7,7 @@
 int main(int argc, char* argv[])
 {
     ROS_INFO_STREAM("MICO HARDWARE starting");
-    ros::init(argc, argv, "mico_hardware");
+    ros::init(argc, argv, "jaco_hardware");
     ros::NodeHandle nh;
 
     MicoRobot robot(nh);
