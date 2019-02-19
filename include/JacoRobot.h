@@ -1,5 +1,5 @@
-#ifndef MICO_ROBOT_H
-#define MICO_ROBOT_H
+#ifndef JACO_ROBOT_H
+#define JACO_ROBOT_H
 
 // ros_control
 #include <hardware_interface/joint_command_interface.h>
@@ -32,12 +32,12 @@ static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
 static const int num_finger_dof = 2;
 
-class MicoRobot: public hardware_interface::RobotHW
+class JacoRobot: public hardware_interface::RobotHW
 {
     public:
-        MicoRobot(ros::NodeHandle nh);
+        JacoRobot(ros::NodeHandle nh);
 
-        virtual ~MicoRobot();
+        virtual ~JacoRobot();
         
         void initializeOffsets();
         

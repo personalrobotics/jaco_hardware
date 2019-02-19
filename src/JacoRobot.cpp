@@ -1,10 +1,10 @@
-#include "MicoRobot.h"
+#include "JacoRobot.h"
 #include <cmath>        // std::abs
 
 using namespace std;
 
 
-MicoRobot::MicoRobot(ros::NodeHandle nh)
+JacoRobot::JacoRobot(ros::NodeHandle nh)
 : movehand_state(pr_hardware_interfaces::IDLE)
 {
     ROS_INFO("Starting to initialize jaco_hardware");
@@ -186,7 +186,7 @@ MicoRobot::MicoRobot(ros::NodeHandle nh)
 
 }
 
-MicoRobot::~MicoRobot()
+JacoRobot::~JacoRobot()
 {
     int r = NO_ERROR_KINOVA;
 
@@ -208,7 +208,7 @@ MicoRobot::~MicoRobot()
     ros::Duration(0.10).sleep();
 }
 
-void MicoRobot::initializeOffsets()
+void JacoRobot::initializeOffsets()
 {
     this->read();
 
@@ -231,39 +231,39 @@ void MicoRobot::initializeOffsets()
     }
 }
 
-ros::Time MicoRobot::get_time(void)
+ros::Time JacoRobot::get_time(void)
 {
     return ros::Time::now();
 }
 
-ros::Duration MicoRobot::get_period(void)
+ros::Duration JacoRobot::get_period(void)
 {
     // TODO(benwr): What is a reasonable period?
     // Here I've assumed  10ms
     return ros::Duration(0.01);
 }
 
-inline double MicoRobot::degreesToRadians(double degrees)
+inline double JacoRobot::degreesToRadians(double degrees)
 {
     return (M_PI / 180.0) * degrees;
 }
 
-inline double MicoRobot::radiansToDegrees(double radians)
+inline double JacoRobot::radiansToDegrees(double radians)
 {
     return (180.0 / M_PI) * radians;
 }
 
-inline double MicoRobot::radiansToFingerTicks(double radians)
+inline double JacoRobot::radiansToFingerTicks(double radians)
 {
     return (6800.0 / 80) * radians * 180.0 / M_PI; //this magic number was found in the kinova-ros code, kinova_driver/src/kinova_arm.cpp
 }
 
-inline double MicoRobot::fingerTicksToRadians(double ticks)
+inline double JacoRobot::fingerTicksToRadians(double ticks)
 {
     return ticks * (80 / 6800.0) * M_PI / 180.0;  //this magic number was found in the kinova-ros code, kinova_driver/src/kinova_arm.cpp
 }
 
-void MicoRobot::sendPositionCommand(const std::vector<double>& command)
+void JacoRobot::sendPositionCommand(const std::vector<double>& command)
 {
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular position
@@ -297,7 +297,7 @@ void MicoRobot::sendPositionCommand(const std::vector<double>& command)
 
 }
 
-void MicoRobot::sendFingerPositionCommand(const std::vector<double>& command)
+void JacoRobot::sendFingerPositionCommand(const std::vector<double>& command)
 {
 
     // ROS_INFO_STREAM("pos finger" << command[6] << " " << command[7]);
@@ -331,7 +331,7 @@ void MicoRobot::sendFingerPositionCommand(const std::vector<double>& command)
     }
 }
 
-void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
+void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
 {
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular velocity
@@ -367,7 +367,7 @@ void MicoRobot::sendVelocityCommand(const std::vector<double>& command)
     }
 }
 
-void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
+void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
 {
     std::vector<float> joint_eff;
     joint_eff.reserve(command.size());
@@ -384,12 +384,12 @@ void MicoRobot::sendTorqueCommand(const std::vector<double>& command)
     }
 }
 
-void MicoRobot::write(void)
+void JacoRobot::write(void)
 {
     sendVelocityCommand(cmd_vel);
 }
 
-void MicoRobot::checkForStall(void)
+void JacoRobot::checkForStall(void)
 {
     // check soft limits.
 
@@ -404,7 +404,7 @@ void MicoRobot::checkForStall(void)
     }
 }
 
-void MicoRobot::read(void)
+void JacoRobot::read(void)
 {
     // make sure that pos, vel, and eff are up to date.
     // TODO: If there is too much lag between calling read()
@@ -448,9 +448,6 @@ void MicoRobot::read(void)
     eff[5] = arm_torq.Actuators.Actuator6;
     eff[6] = arm_torq.Fingers.Finger2;
     eff[7] = arm_torq.Fingers.Finger2;
-    //eff[6] = arm_torq.Actuator7;
-    //eff[7] = arm_torq.Actuator8;
-    //checkForStall();
     
 }
 
