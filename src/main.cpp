@@ -1,4 +1,4 @@
-#include <MicoRobot.h>
+#include <JacoRobot.h>
 #include <iostream>
 #include "std_msgs/String.h"
 #include <ros/rate.h>
@@ -6,11 +6,11 @@
 
 int main(int argc, char* argv[])
 {
-    ROS_INFO_STREAM("MICO HARDWARE starting");
-    ros::init(argc, argv, "mico_hardware");
+    ROS_INFO_STREAM("JACO HARDWARE starting");
+    ros::init(argc, argv, "jaco_hardware");
     ros::NodeHandle nh;
 
-    MicoRobot robot(nh);
+    JacoRobot robot(nh);
     controller_manager::ControllerManager cm(&robot);
 
     ros::AsyncSpinner spinner(1);

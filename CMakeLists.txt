@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mico_hardware)
+project(jaco_hardware)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
     controller_manager
     hardware_interface
     pr_ros_controllers
+    pr_hardware_interfaces
     sensor_msgs
     )
 
@@ -42,25 +43,25 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(mico_hardware
-#   src/${PROJECT_NAME}/mico_hardware.cpp
+# add_library(jaco_hardware
+#   src/${PROJECT_NAME}/jaco_hardware.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(mico_hardware src/main.cpp src/MicoRobot.cpp)
+add_executable(jaco_hardware src/main.cpp src/JacoRobot.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(mico_hardware_node mico_hardware_generate_messages_cpp)
+# add_dependencies(jaco_hardware_node jaco_hardware_generate_messages_cpp)
 set(KINOVA_ARM_LIBS ${catkin_LIBRARIES})
-set(KINOVA_ARM_LIBS 
+set(KINOVA_ARM_LIBS
     ${KINOVA_ARM_LIBS}
-    -l:Kinova.API.CommLayerUbuntu.so
-    -l:Kinova.API.USBCommandLayerUbuntu.so)
+    -l:USBCommLayerUbuntu.so
+    -l:USBCommandLayerUbuntu.so)
 
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(mico_hardware
+ target_link_libraries(jaco_hardware
    ${catkin_LIBRARIES}
    ${Boost_LIBRARIES}
    ${KINOVA_ARM_LIBS}
