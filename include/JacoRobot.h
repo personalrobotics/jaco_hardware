@@ -4,10 +4,10 @@
 // ros_control
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
-#include <pr_ros_controllers/joint_mode_interface.h>
-#include <pr_hardware_interfaces/PositionCommandInterface.h>
+#include <hardware_interface/joint_mode_interface.h>
 
-//#include <hardware_interface/controller_info_interface.h>
+#include <pr_hardware_interfaces/CartesianVelocityInterface.h>
+
 #include <hardware_interface/robot_hw.h>
 #include <controller_manager/controller_manager.h>
 
@@ -53,7 +53,7 @@ class JacoRobot: public hardware_interface::RobotHW
         void sendPositionCommand(const std::vector<double>& command);
         void sendVelocityCommand(const std::vector<double>& command);
         void sendTorqueCommand(const std::vector<double>& command);
-        void sendFingerPositionCommand(const std::vector<double>& command);
+        void sendCartesianVelocityCommand(const std::vector<double>& command);
 
         void write(void);
         void read(void);
@@ -69,22 +69,26 @@ class JacoRobot: public hardware_interface::RobotHW
         hardware_interface::PositionJointInterface jnt_pos_interface;
         hardware_interface::JointModeInterface jm_interface;
 
-        pr_hardware_interfaces::PositionCommandInterface movehand_interface;
-        pr_hardware_interfaces::MoveState movehand_state;
+        pr_hardware_interfaces::CartesianVelocityInterface cart_vel_interface;
 
-        //JacoArm *arm;
+        // Joint Commands
         vector<double> cmd_pos;
         vector<double> cmd_vel;
         vector<double> cmd_eff;
-        vector<double> pos; // contains full dof
-        vector<double> finger_pos; // just fingers, used for finger position control
+        vector<double> cmd_cart_vel;
+
+        // Joint State
+        vector<double> pos;
         vector<double> vel;
         vector<double> eff;
+
+        // Parameters
         vector<double> pos_offsets;
         vector<double> soft_limits;
-        vector<double> zero_velocity_command;
-        int joint_mode; // this tells whether we're in position or velocity control mode
-        int last_mode;
+
+        // Switch between joint command type
+        hardware_interface::JointCommandModes joint_mode; 
+        hardware_interface::JointCommandModes last_mode;
 };
 
 #endif

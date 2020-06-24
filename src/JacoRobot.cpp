@@ -5,18 +5,19 @@ using namespace std;
 
 
 JacoRobot::JacoRobot(ros::NodeHandle nh)
-: movehand_state(pr_hardware_interfaces::IDLE)
 {
     ROS_INFO("Starting to initialize jaco_hardware");
     int i;
     cmd_pos.resize(num_full_dof);
     cmd_vel.resize(num_full_dof);
     cmd_eff.resize(num_full_dof);
-    zero_velocity_command.resize(num_full_dof, 0.0);
+
+    cmd_cart_vel.resize(6); // SE(3)
+
     pos.resize(num_full_dof);
     vel.resize(num_full_dof);
     eff.resize(num_full_dof);
-    finger_pos.resize(num_finger_dof);
+    
     pos_offsets.resize(num_arm_dof);
     soft_limits.resize(num_full_dof);
 
@@ -118,17 +119,16 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     registerInterface(&jnt_eff_interface);
 
     // connect and register the joint mode interface
-    // this is needed to determine if velocity or position control is needed.
+    // this is needed to determine which control mode is needed
     hardware_interface::JointModeHandle mode_handle("joint_mode", &joint_mode);
     jm_interface.registerHandle(mode_handle);
-
-
-    pr_hardware_interfaces::PositionCommandHandle position_command_handle(
-        "/hand", &movehand_state, &finger_pos);
-    movehand_interface.registerHandle(position_command_handle);
-    registerInterface(&movehand_interface);
-
     registerInterface(&jm_interface);
+
+    // connect and register the joint mode interface
+    // this takes cartesian (workspace) velocity in as a command
+    pr_hardware_interfaces::CartesianVelocityHandle cartesian_velocity_handle("cart_vel", &cmd_cart_vel);
+    cart_vel_interface.registerHandle(cartesian_velocity_handle);
+    registerInterface(&cart_vel_interface);
 
     eff_stall = false;
 
@@ -159,12 +159,6 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
         ROS_ERROR("Could not set angular control: Error code %d",r);
     }
     
-    // ROS_INFO("Attempting to set force control mode...");
-    // r = StartForceControl();
-    // if (r != NO_ERROR_KINOVA) {
-    //    ROS_ERROR("Could not start force control: Error code %d",r);
-    // }
-    
     // get soft limits from rosparams
     if (nh.hasParam("soft_limits/eff"))
     {
@@ -182,8 +176,10 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     // initialize default positions
     initializeOffsets();
 
-    last_mode = hardware_interface::MODE_VELOCITY;
-
+    // Default to velocity mode
+    // This will also clear out any trajectories at the beginning.
+    joint_mode = hardware_interface::JointCommandModes::MODE_VELOCITY;
+    last_mode = hardware_interface::JointCommandModes::BEGIN;
 }
 
 JacoRobot::~JacoRobot()
@@ -280,12 +276,12 @@ void JacoRobot::sendPositionCommand(const std::vector<double>& command)
     TrajectoryPoint trajectory;
     trajectory.InitStruct(); // initialize structure
     memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
-    // trajectory.Position.Type = ANGULAR_POSITION; // set to angular position 
-    // trajectory.Position.Actuators = joint_pos; // position is passed in the position struct
 
     trajectory.Position.Delay = 0.0;
     trajectory.Position.HandMode = POSITION_MODE;
     trajectory.Position.Type = ANGULAR_POSITION;
+    trajectory.Position.Actuators = joint_pos;
+
     trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
     trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
 
@@ -297,47 +293,10 @@ void JacoRobot::sendPositionCommand(const std::vector<double>& command)
 
 }
 
-void JacoRobot::sendFingerPositionCommand(const std::vector<double>& command)
-{
-
-    // ROS_INFO_STREAM("pos finger" << command[6] << " " << command[7]);
-
-    // Need to send an "advance trajectory" with a single point and the correct settings
-    // Angular position
-
-    AngularPosition arm_pos;
-    GetAngularPosition(arm_pos);
-    
-    TrajectoryPoint trajectory;
-    trajectory.InitStruct(); // initialize structure
-    memset(&trajectory, 0, sizeof(trajectory));  // zero out the structure
-
-    // Set arm velocity to zero
-    trajectory.Position.Type = ANGULAR_POSITION; // set to angular velocity 
-    trajectory.Position.Actuators = arm_pos.Actuators;;
-
-    trajectory.Position.Delay = 0.0;
-    trajectory.Position.HandMode = POSITION_MODE;
-    trajectory.Position.Type = ANGULAR_POSITION;
-    trajectory.LimitationsActive = 0;
-
-    trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
-    trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
-
-    int r = NO_ERROR_KINOVA;
-    r = SendBasicTrajectory(trajectory);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
-    }
-}
-
 void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
 {
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular velocity
-    // ROS_INFO_STREAM("vel " << command[0] << " " << command[1] << " "
-    //     << command[2] << " " << command[3] << " " << command[4] << " "
-    //     << command[5] << " " << command[6] << " " << command[7]);
 
     AngularInfo joint_vel;
     joint_vel.InitStruct();
@@ -353,12 +312,40 @@ void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
     memset(&trajectory, 0, sizeof(trajectory));
 
     trajectory.Position.Type = ANGULAR_VELOCITY;
+    trajectory.Position.HandMode = VELOCITY_MODE;
     trajectory.Position.Actuators = joint_vel;
 
-    trajectory.Position.HandMode = VELOCITY_MODE;
-    trajectory.Position.Type = ANGULAR_VELOCITY;
     trajectory.Position.Fingers.Finger1 = float(radiansToFingerTicks(command.at(6)));
     trajectory.Position.Fingers.Finger2 = float(radiansToFingerTicks(command.at(7)));
+    
+    int r = NO_ERROR_KINOVA;
+    r = SendAdvanceTrajectory(trajectory);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",r);
+    }
+}
+
+void JacoRobot::sendCartesianVelocityCommand(const std::vector<double>& command) {
+    // Need to send an "advance trajectory" with a single point and the correct settings
+    // Cartesian velocity (m/s and rad/s)
+
+    CartesianInfo cart_vel;
+    cart_vel.InitStruct();
+    cart_vel.X = float(command.at(0));
+    cart_vel.Y = float(command.at(1));
+    cart_vel.Z = float(command.at(2));
+    cart_vel.ThetaX = float(command.at(3));
+    cart_vel.ThetaY = float(command.at(4));
+    cart_vel.ThetaZ = float(command.at(5));
+    
+    TrajectoryPoint trajectory;
+    trajectory.InitStruct();
+    memset(&trajectory, 0, sizeof(trajectory));
+
+    trajectory.Position.Type = CARTESIAN_VELOCITY;
+
+    // confusingly, velocity is passed in the position struct
+    trajectory.Position.CartesianPosition = cart_vel;
     
     int r = NO_ERROR_KINOVA;
     r = SendAdvanceTrajectory(trajectory);
@@ -386,7 +373,33 @@ void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
 
 void JacoRobot::write(void)
 {
-    sendVelocityCommand(cmd_vel);
+    // Clear all commands when switching modes
+    if (last_mode != joint_mode)
+    {
+        EraseAllTrajectories();
+        last_mode = joint_mode;
+    }
+
+    switch(joint_mode) {
+        case hardware_interface::JointCommandModes::MODE_VELOCITY:
+            sendVelocityCommand(cmd_vel);
+            break;
+        case hardware_interface::JointCommandModes::MODE_POSITION:
+            sendPositionCommand(cmd_pos);
+            break;
+        case hardware_interface::JointCommandModes::MODE_EFFORT:
+            sendTorqueCommand(cmd_eff);
+            break;
+        case hardware_interface::JointCommandModes::NOMODE:
+            sendCartesianVelocityCommand(cmd_cart_vel);
+            break;
+        case hardware_interface::JointCommandModes::EMERGENCY_STOP:
+        // TODO: have this drop into gravity compensation
+        default:
+            // Stop Bot
+            vector<double> zero(num_full_dof, 0.0);
+            sendVelocityCommand(zero);
+    }
 }
 
 void JacoRobot::checkForStall(void)
