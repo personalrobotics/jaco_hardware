@@ -180,6 +180,10 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     // This will also clear out any trajectories at the beginning.
     joint_mode = hardware_interface::JointCommandModes::MODE_VELOCITY;
     last_mode = hardware_interface::JointCommandModes::BEGIN;
+
+    // Default to no grav comp
+    mUseGravComp = false;
+    mInTorqueMode = false;
 }
 
 JacoRobot::~JacoRobot()
@@ -259,8 +263,104 @@ inline double JacoRobot::fingerTicksToRadians(double ticks)
     return ticks * (80 / 6800.0) * M_PI / 180.0;  //this magic number was found in the kinova-ros code, kinova_driver/src/kinova_arm.cpp
 }
 
+bool JacoRobot::setTorqueMode(bool torqueMode) {
+
+    int r = NO_ERROR_KINOVA;
+
+    r = SetTorqueSafetyFactor(1.0f);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",r);
+        return false;
+    }
+
+    r = SwitchTrajectoryTorque(torqueMode ? TORQUE : POSITION);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",r);
+        return false;
+    }
+    mInTorqueMode = torqueMode;
+    return true;
+}
+
+void JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
+    std::string path = ros::package::getPath("jaco_hardware") + "/" + fileName;
+    std::vector<float> params;
+
+    std::ifstream file(path);
+    if(!file.is_open()) {
+        ROS_ERROR("Could not open file: %s", path.c_str());
+        return;
+    }
+    while(!file.eof()) {
+        float param;
+        file >> param;
+        params.push_back(param);
+    }
+    // We'll read the last element twice
+    params.pop_back();
+    file.close();
+    std::ostringstream oss;
+            std::copy(params.begin(), params.end()-1,
+                std::ostream_iterator<float>(oss, ","));
+            oss << params.back();
+    ROS_INFO_STREAM("Gravcomp Params: " << oss.str());
+    useGravcompForEStop(use, params);
+}
+
+void JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
+    if (!use || params.size() == 0) {
+        mUseGravComp = false;
+        return;
+    }
+
+    float arr[OPTIMAL_Z_PARAM_SIZE] = {0};
+    std::copy(params.begin(), params.end(), arr);
+
+
+    int r = NO_ERROR_KINOVA;
+    r = SetGravityOptimalZParam(arr);
+    // Known error, see https://github.com/Kinovarobotics/kinova-ros/issues/114
+    if (r != NO_ERROR_KINOVA && r != 2005) {
+        ROS_ERROR("Could not send Z Params : Error code %d",r);
+        mUseGravComp = false;
+        return;
+    }
+    r = SetGravityType(OPTIMAL);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send Gravity Type : Error code %d",r);
+        mUseGravComp = false;
+        return;
+    }
+
+    mUseGravComp = true;
+}
+
+std::vector<float> JacoRobot::calcGravcompParams() {
+    double arr[OPTIMAL_Z_PARAM_SIZE] = {0};
+    
+    int r = NO_ERROR_KINOVA;
+    r = RunGravityZEstimationSequence(our_robot_type, arr);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not run sequence : Error code %d",r);
+        return std::vector<float>();
+    }
+
+    std::vector<float> ret(OPTIMAL_Z_PARAM_SIZE);
+    for(int i = 0; i < OPTIMAL_Z_PARAM_SIZE; i++) {
+        ret[i] = (float)arr[i];
+    }
+    return ret;
+}
+
 void JacoRobot::sendPositionCommand(const std::vector<double>& command)
 {
+    if(mInTorqueMode) {
+        if(!setTorqueMode(false)) {
+            ROS_WARN("Could not exit torque mode.");
+            return;
+        }
+        ROS_INFO("Exited torque mode.");
+    }
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular position
     AngularInfo joint_pos;
@@ -295,6 +395,14 @@ void JacoRobot::sendPositionCommand(const std::vector<double>& command)
 
 void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
 {
+    if(mInTorqueMode) {
+        if(!setTorqueMode(false)) {
+            ROS_WARN("Could not exit torque mode.");
+            return;
+        }
+        ROS_INFO("Exited torque mode.");
+    }
+
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Angular velocity
 
@@ -326,6 +434,14 @@ void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
 }
 
 void JacoRobot::sendCartesianVelocityCommand(const std::vector<double>& command) {
+    if(mInTorqueMode) {
+        if(!setTorqueMode(false)) {
+            ROS_WARN("Could not exit torque mode.");
+            return;
+        }
+        ROS_INFO("Exited torque mode.");
+    }
+
     // Need to send an "advance trajectory" with a single point and the correct settings
     // Cartesian velocity (m/s and rad/s)
 
@@ -356,19 +472,27 @@ void JacoRobot::sendCartesianVelocityCommand(const std::vector<double>& command)
 
 void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
 {
-    std::vector<float> joint_eff;
-    joint_eff.reserve(command.size());
-    for (std::size_t i = 0; i < command.size(); ++i)
-    {
-        joint_eff.push_back(float(command[i]));
+    if(!mInTorqueMode) {
+        if(!setTorqueMode(true)) {
+            ROS_WARN("Could not enter torque mode.");
+            return;
+        }
+        ROS_INFO("Entered torque mode.");
     }
-    ROS_INFO_STREAM("eff " << float(joint_eff[5]));
+
+    float joint_eff[COMMAND_SIZE] = {0};
+    std::copy(command.begin(), command.end(), joint_eff);
+
 
     int r = NO_ERROR_KINOVA;
-    r = SendAngularTorqueCommand(&joint_eff[0]);
+    r = SendAngularTorqueCommand(joint_eff);
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not send : Error code %d",r);
     }
+}
+
+void JacoRobot::enterGravComp() {
+    joint_mode = hardware_interface::JointCommandModes::EMERGENCY_STOP;
 }
 
 void JacoRobot::write(void)
@@ -377,8 +501,11 @@ void JacoRobot::write(void)
     if (last_mode != joint_mode)
     {
         EraseAllTrajectories();
+        setTorqueMode(false);
         last_mode = joint_mode;
     }
+
+    vector<double> zero(num_full_dof, 0.0);
 
     switch(joint_mode) {
         case hardware_interface::JointCommandModes::MODE_VELOCITY:
@@ -394,10 +521,13 @@ void JacoRobot::write(void)
             sendCartesianVelocityCommand(cmd_cart_vel);
             break;
         case hardware_interface::JointCommandModes::EMERGENCY_STOP:
-        // TODO: have this drop into gravity compensation
+            // Drop to gravity compensation
+            if(mUseGravComp) {
+                sendTorqueCommand(zero);
+                break;
+            }
         default:
             // Stop Bot
-            vector<double> zero(num_full_dof, 0.0);
             sendVelocityCommand(zero);
     }
 }
