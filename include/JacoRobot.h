@@ -69,6 +69,7 @@ class JacoRobot: public hardware_interface::RobotHW
         void useGravcompForEStop(bool use, std::string fileName);
         bool setTorqueMode(bool torqueMode);
         void enterGravComp(void);
+        bool zeroTorqueSensors(void); 
 
         bool eff_stall;
 

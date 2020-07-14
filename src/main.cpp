@@ -35,6 +35,20 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    // Zero Torque Sensors
+    bool zeroTorque = false;
+    nh.getParam("jaco_hardware/zero_torque", zeroTorque);
+    if(zeroTorque) {
+        nh.setParam("jaco_hardware/zero_torque", false);
+        ROS_INFO_STREAM("Zeroing Torque Sensors...");
+        bool ret = robot.zeroTorqueSensors();
+        if(!ret) {
+            ROS_ERROR("Could not zero torque sensors");
+            return -1;
+        }
+        return 0;
+    }
+
     // Activate default grav comp parameters
     std::string gravCompFile = "";
     nh.getParam("soft_limits/grav_comp_file", gravCompFile);

@@ -278,6 +278,7 @@ bool JacoRobot::setTorqueMode(bool torqueMode) {
         ROS_ERROR("Could not send : Error code %d",r);
         return false;
     }
+
     mInTorqueMode = torqueMode;
     return true;
 }
@@ -393,6 +394,39 @@ void JacoRobot::sendPositionCommand(const std::vector<double>& command)
 
 }
 
+bool JacoRobot::zeroTorqueSensors() {
+    // Move to candlestick
+    const double PI = 3.1415926535897932384626;
+    std::vector<double> command(num_full_dof);
+    for(int i = 0; i < num_arm_dof; i++) {
+        command[i] = PI;
+    }
+    command[4] = 0.0;
+    command[5] = 0.0;
+    command[6] = PI;
+    command[7] = PI;
+
+    ROS_INFO("Moving to candlestick...");
+    sendPositionCommand(command);
+    // Wait for finish
+    ros::Duration(10.0).sleep();
+
+    // Zero all actuators
+    // Actuator addresses are 16-21
+    ROS_INFO("Executing torque zero...");
+    for(int i = 16; i < 22; i++) {
+        int r = NO_ERROR_KINOVA;
+        r = SetTorqueZero(i);
+        if (r != NO_ERROR_KINOVA) {
+            ROS_ERROR("Could not set torque zero : Error code %d",r);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
 {
     if(mInTorqueMode) {
@@ -472,6 +506,14 @@ void JacoRobot::sendCartesianVelocityCommand(const std::vector<double>& command)
 
 void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
 {
+    // Check if in torque mode
+    int mode = 0;
+    GetTrajectoryTorqueMode(mode);
+    if(!mode) {
+        ROS_WARN("Dropped out of torque mode. Retrying...");
+        mInTorqueMode = false;
+    }
+
     if(!mInTorqueMode) {
         if(!setTorqueMode(true)) {
             ROS_WARN("Could not enter torque mode.");
