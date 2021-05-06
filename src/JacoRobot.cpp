@@ -159,18 +159,17 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
         ROS_ERROR("Could not set angular control: Error code %d",r);
     }
     
-    // get soft limits from rosparams
-    if (nh.hasParam("soft_limits/eff"))
-    {
-        nh.getParam("soft_limits/eff", soft_limits);
-        ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]",
-            soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3],
-            soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);
-    }
-    else
-    {
-        ROS_ERROR("No soft limits set for the MICO!");
-        throw std::runtime_error("no soft limits set for the MICO!");
+      // get soft limits from rosparams
+  if (nh.hasParam("soft_limits/eff")) {
+    nh.getParam("soft_limits/eff", soft_limits);
+  } else {
+    ROS_WARN("No JACO soft limits in param server! Using defaults.");
+    const double defaults[] = {16,16,16,10,10,10,1.3,1.3};
+    soft_limits.assign(defaults, defaults+num_full_dof);
+  }
+  ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]",
+             soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3],
+             soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);hrow std::runtime_error("no soft limits set for the MICO!");
     }
 
     // initialize default positions
