@@ -170,7 +170,7 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]",
                soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3],
                soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);
-  
+
     // initialize default positions
     initializeOffsets();
 
@@ -281,14 +281,18 @@ bool JacoRobot::setTorqueMode(bool torqueMode) {
     return true;
 }
 
-void JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
+bool JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
+    if(fileName.empty()) {
+      return false;
+    }
+
     std::string path = ros::package::getPath("jaco_hardware") + "/" + fileName;
     std::vector<float> params;
 
     std::ifstream file(path);
     if(!file.is_open()) {
         ROS_ERROR("Could not open file: %s", path.c_str());
-        return;
+        return false;
     }
     while(!file.eof()) {
         float param;
@@ -303,13 +307,13 @@ void JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
                 std::ostream_iterator<float>(oss, ","));
             oss << params.back();
     ROS_INFO_STREAM("Gravcomp Params: " << oss.str());
-    useGravcompForEStop(use, params);
+    return useGravcompForEStop(use, params);
 }
 
-void JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
+bool JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
     if (!use || params.size() == 0) {
         mUseGravComp = false;
-        return;
+        return false;
     }
 
     float arr[OPTIMAL_Z_PARAM_SIZE] = {0};
@@ -322,16 +326,17 @@ void JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
     if (r != NO_ERROR_KINOVA && r != 2005) {
         ROS_ERROR("Could not send Z Params : Error code %d",r);
         mUseGravComp = false;
-        return;
+        return false;
     }
     r = SetGravityType(OPTIMAL);
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not send Gravity Type : Error code %d",r);
         mUseGravComp = false;
-        return;
+        return false;
     }
 
     mUseGravComp = true;
+    return true;
 }
 
 std::vector<float> JacoRobot::calcGravcompParams() {

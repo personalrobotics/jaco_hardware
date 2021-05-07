@@ -40,7 +40,8 @@ int main(int argc, char* argv[])
     nh.getParam("jaco_hardware/zero_torque", zeroTorque);
     if(zeroTorque) {
         nh.setParam("jaco_hardware/zero_torque", false);
-        ROS_INFO_STREAM("Zeroing Torque Sensors...");
+        ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
+        std::cin.get();
         bool ret = robot.zeroTorqueSensors();
         if(!ret) {
             ROS_ERROR("Could not zero torque sensors");
@@ -49,19 +50,32 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    // Activate default grav comp parameters
-    std::string gravCompFile = "";
-    nh.getParam("soft_limits/grav_comp_file", gravCompFile);
-    ROS_INFO_STREAM("Setting Gravcomp Params from: " << gravCompFile);
-    robot.useGravcompForEStop(true, gravCompFile);
+    bool enableGravComp = false;
+    nh.getParam("jaco_hardware/grav_comp", enableGravComp);
+    if(enableGravComp) {
+      nh.setParam("jaco_hardware/grav_comp", false);
 
-    // Whether to enter grav comp on start-up
-    bool enterGravComp = false;
-    nh.getParam("jaco_hardware/grav_comp", enterGravComp);
-    if(enterGravComp) {
-        nh.setParam("jaco_hardware/grav_comp", false);
-        robot.enterGravComp();
-    }
+      // Activate default grav comp parameters
+      std::string gravCompFile = "calib/GravComParams_Empty.txt";
+      nh.getParam("jaco_hardware/grav_comp_file", gravCompFile);
+      if(robot.useGravcompForEStop(true, gravCompFile)) {
+        ROS_INFO_STREAM("Gravcomp Enabled with Params: " << gravCompFile);
+
+        // Whether to enter grav comp on start-up
+        bool enterGravComp = false;
+        nh.getParam("jaco_hardware/start_grav_comp", enterGravComp);
+        if(enterGravComp) {
+            ROS_INFO_STREAM("Entering Grav Comp...");
+            nh.setParam("jaco_hardware/start_grav_comp", false);
+            robot.enterGravComp();
+        }
+      } // end if(Gravcomp successfuly enabled)
+    } // end if(enableGravComp)
+    nh.setParam("jaco_hardware/grav_comp_file", "calib/GravComParams_Empty.txt");
+
+      
+
+    ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
     // Ros control rate of 100Hz
     ros::Rate controlRate(100.0);

@@ -65,8 +65,8 @@ class JacoRobot: public hardware_interface::RobotHW
 
         // Gravcomp functions
         std::vector<float> calcGravcompParams(void);
-        void useGravcompForEStop(bool use, std::vector<float> params = std::vector<float>());
-        void useGravcompForEStop(bool use, std::string fileName);
+        bool useGravcompForEStop(bool use, std::vector<float> params = std::vector<float>());
+        bool useGravcompForEStop(bool use, std::string fileName);
         bool setTorqueMode(bool torqueMode);
         void enterGravComp(void);
         bool zeroTorqueSensors(void); 
