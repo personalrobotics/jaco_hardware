@@ -3,89 +3,108 @@
 
 // ros_control
 #include <hardware_interface/joint_command_interface.h>
+#include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/joint_state_interface.h>
-#include <pr_ros_controllers/joint_mode_interface.h>
-#include <pr_hardware_interfaces/PositionCommandInterface.h>
 
-//#include <hardware_interface/controller_info_interface.h>
-#include <hardware_interface/robot_hw.h>
+#include <pr_hardware_interfaces/CartesianVelocityInterface.h>
+
 #include <controller_manager/controller_manager.h>
+#include <hardware_interface/robot_hw.h>
 
 // ros
-#include <ros/ros.h>
 #include <ros/console.h>
+#include <ros/package.h>
+#include <ros/ros.h>
 
 // kinova api
-#include <kinova/KinovaTypes.h>
 #include <kinova/Kinova.API.USBCommandLayerUbuntu.h>
+#include <kinova/KinovaTypes.h>
 
 // c++
-#include <stdexcept>
-#include <limits>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 
 using namespace std;
 
 // This makes the reported joint values to start within urdf limits
-static const double hardcoded_pos_midpoints[6] = { 0.0, M_PI, M_PI, 0.0, 0.0, 0.0 };
+static const double hardcoded_pos_midpoints[6] = {0.0, M_PI, M_PI,
+                                                  0.0, 0.0,  0.0};
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
 static const int num_finger_dof = 2;
 
-class JacoRobot: public hardware_interface::RobotHW
-{
-    public:
-        JacoRobot(ros::NodeHandle nh);
+static const ROBOT_TYPE our_robot_type = JACOV2_6DOF_ASSISTIVE;
 
-        virtual ~JacoRobot();
-        
-        void initializeOffsets();
-        
-        ros::Time get_time(void);
+class JacoRobot : public hardware_interface::RobotHW {
+public:
+  JacoRobot(ros::NodeHandle nh);
 
-        ros::Duration get_period(void);
+  virtual ~JacoRobot();
 
-        inline double degreesToRadians(double degrees);
-        inline double radiansToDegrees(double radians);
-        inline double radiansToFingerTicks(double radians);
-        inline double fingerTicksToRadians(double ticks);
+  void initializeOffsets();
 
-        void sendPositionCommand(const std::vector<double>& command);
-        void sendVelocityCommand(const std::vector<double>& command);
-        void sendTorqueCommand(const std::vector<double>& command);
-        void sendFingerPositionCommand(const std::vector<double>& command);
+  ros::Time get_time(void);
 
-        void write(void);
-        void read(void);
+  ros::Duration get_period(void);
 
-        void checkForStall(void);
+  inline double degreesToRadians(double degrees);
+  inline double radiansToDegrees(double radians);
+  inline double radiansToFingerTicks(double radians);
+  inline double fingerTicksToRadians(double ticks);
 
-        bool eff_stall;
+  void sendPositionCommand(const std::vector<double> &command);
+  void sendVelocityCommand(const std::vector<double> &command);
+  void sendTorqueCommand(const std::vector<double> &command);
+  void sendCartesianVelocityCommand(const std::vector<double> &command);
 
-    private:
-        hardware_interface::JointStateInterface jnt_state_interface;
-        hardware_interface::EffortJointInterface jnt_eff_interface;
-        hardware_interface::VelocityJointInterface jnt_vel_interface;
-        hardware_interface::PositionJointInterface jnt_pos_interface;
-        hardware_interface::JointModeInterface jm_interface;
+  void write(void);
+  void read(void);
 
-        pr_hardware_interfaces::PositionCommandInterface movehand_interface;
-        pr_hardware_interfaces::MoveState movehand_state;
+  void checkForStall(void);
 
-        //JacoArm *arm;
-        vector<double> cmd_pos;
-        vector<double> cmd_vel;
-        vector<double> cmd_eff;
-        vector<double> pos; // contains full dof
-        vector<double> finger_pos; // just fingers, used for finger position control
-        vector<double> vel;
-        vector<double> eff;
-        vector<double> pos_offsets;
-        vector<double> soft_limits;
-        vector<double> zero_velocity_command;
-        int joint_mode; // this tells whether we're in position or velocity control mode
-        int last_mode;
+  // Gravcomp functions
+  std::vector<float> calcGravcompParams(void);
+  bool useGravcompForEStop(bool use,
+                           std::vector<float> params = std::vector<float>());
+  bool useGravcompForEStop(bool use, std::string fileName);
+  bool setTorqueMode(bool torqueMode);
+  void enterGravComp(void);
+  bool zeroTorqueSensors(void);
+
+  bool eff_stall;
+
+private:
+  hardware_interface::JointStateInterface jnt_state_interface;
+  hardware_interface::EffortJointInterface jnt_eff_interface;
+  hardware_interface::VelocityJointInterface jnt_vel_interface;
+  hardware_interface::PositionJointInterface jnt_pos_interface;
+  hardware_interface::JointModeInterface jm_interface;
+
+  pr_hardware_interfaces::CartesianVelocityInterface cart_vel_interface;
+
+  // Joint Commands
+  vector<double> cmd_pos;
+  vector<double> cmd_vel;
+  vector<double> cmd_eff;
+  vector<double> cmd_cart_vel;
+
+  // Joint State
+  vector<double> pos;
+  vector<double> vel;
+  vector<double> eff;
+
+  // Parameters
+  vector<double> pos_offsets;
+  vector<double> soft_limits;
+
+  // Switch between joint command type
+  hardware_interface::JointCommandModes joint_mode;
+  hardware_interface::JointCommandModes last_mode;
+
+  // Only do grav comp if we have the parameters
+  bool mUseGravComp;
+  bool mInTorqueMode;
 };
 
 #endif
-
