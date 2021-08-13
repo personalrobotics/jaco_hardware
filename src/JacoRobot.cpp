@@ -12,8 +12,6 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     cmd_vel.resize(num_full_dof);
     cmd_eff.resize(num_full_dof);
 
-    cmd_cart_vel.resize(6); // SE(3)
-
     pos.resize(num_full_dof);
     vel.resize(num_full_dof);
     eff.resize(num_full_dof);
@@ -123,12 +121,6 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     hardware_interface::JointModeHandle mode_handle("joint_mode", &joint_mode);
     jm_interface.registerHandle(mode_handle);
     registerInterface(&jm_interface);
-
-    // connect and register the joint mode interface
-    // this takes cartesian (workspace) velocity in as a command
-    pr_hardware_interfaces::CartesianVelocityHandle cartesian_velocity_handle("cart_vel", &cmd_cart_vel);
-    cart_vel_interface.registerHandle(cartesian_velocity_handle);
-    registerInterface(&cart_vel_interface);
 
     eff_stall = false;
 
@@ -325,35 +317,6 @@ void JacoRobot::sendVelocityCommand(const std::vector<double>& command)
     }
 }
 
-void JacoRobot::sendCartesianVelocityCommand(const std::vector<double>& command) {
-    // Need to send an "advance trajectory" with a single point and the correct settings
-    // Cartesian velocity (m/s and rad/s)
-
-    CartesianInfo cart_vel;
-    cart_vel.InitStruct();
-    cart_vel.X = float(command.at(0));
-    cart_vel.Y = float(command.at(1));
-    cart_vel.Z = float(command.at(2));
-    cart_vel.ThetaX = float(command.at(3));
-    cart_vel.ThetaY = float(command.at(4));
-    cart_vel.ThetaZ = float(command.at(5));
-    
-    TrajectoryPoint trajectory;
-    trajectory.InitStruct();
-    memset(&trajectory, 0, sizeof(trajectory));
-
-    trajectory.Position.Type = CARTESIAN_VELOCITY;
-
-    // confusingly, velocity is passed in the position struct
-    trajectory.Position.CartesianPosition = cart_vel;
-    
-    int r = NO_ERROR_KINOVA;
-    r = SendAdvanceTrajectory(trajectory);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
-    }
-}
-
 void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
 {
     std::vector<float> joint_eff;
@@ -389,9 +352,6 @@ void JacoRobot::write(void)
             break;
         case hardware_interface::JointCommandModes::MODE_EFFORT:
             sendTorqueCommand(cmd_eff);
-            break;
-        case hardware_interface::JointCommandModes::NOMODE:
-            sendCartesianVelocityCommand(cmd_cart_vel);
             break;
         case hardware_interface::JointCommandModes::EMERGENCY_STOP:
         // TODO: have this drop into gravity compensation

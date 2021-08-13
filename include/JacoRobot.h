@@ -6,8 +6,6 @@
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/joint_mode_interface.h>
 
-#include <pr_hardware_interfaces/CartesianVelocityInterface.h>
-
 #include <hardware_interface/robot_hw.h>
 #include <controller_manager/controller_manager.h>
 
@@ -53,7 +51,6 @@ class JacoRobot: public hardware_interface::RobotHW
         void sendPositionCommand(const std::vector<double>& command);
         void sendVelocityCommand(const std::vector<double>& command);
         void sendTorqueCommand(const std::vector<double>& command);
-        void sendCartesianVelocityCommand(const std::vector<double>& command);
 
         void write(void);
         void read(void);
@@ -68,8 +65,6 @@ class JacoRobot: public hardware_interface::RobotHW
         hardware_interface::VelocityJointInterface jnt_vel_interface;
         hardware_interface::PositionJointInterface jnt_pos_interface;
         hardware_interface::JointModeInterface jm_interface;
-
-        pr_hardware_interfaces::CartesianVelocityInterface cart_vel_interface;
 
         // Joint Commands
         vector<double> cmd_pos;
