@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
 
     // Zero Torque Sensors
     bool zeroTorque = false;
-    nh.getParam("zero_torque", zeroTorque);
+    nh.getParam("run_zero_torque", zeroTorque);
     if(zeroTorque) {
-        nh.setParam("zero_torque", false);
+        nh.setParam("run_zero_torque", false);
         ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
         std::cin.get();
         bool ret = robot.zeroTorqueSensors();
@@ -66,7 +66,6 @@ int main(int argc, char* argv[])
     bool enableGravComp = false;
     nh.getParam("grav_comp", enableGravComp);
     if(enableGravComp) {
-      nh.setParam("grav_comp", false);
 
       // Activate default grav comp parameters
       std::string gravCompFile = "calib/GravComParams_Empty.txt";
@@ -77,15 +76,14 @@ int main(int argc, char* argv[])
 
         // Whether to enter grav comp on start-up
         bool enterGravComp = false;
-        nh.getParam("start_grav_comp", enterGravComp);
+        nh.getParam("run_grav_comp", enterGravComp);
         if(enterGravComp) {
             ROS_INFO_STREAM("Entering Grav Comp...");
-            nh.setParam("start_grav_comp", false);
+            nh.setParam("run_grav_comp", false);
             robot.enterGravComp();
         }
       } // end if(Gravcomp successfuly enabled)
     } // end if(enableGravComp)
-    nh.setParam("grav_comp_file", "calib/GravComParams_Empty.txt");
 
     ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
