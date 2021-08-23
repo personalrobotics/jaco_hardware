@@ -10,7 +10,207 @@ JacoRobot::JacoRobot(ros::NodeHandle nh) {
   cmd_vel.resize(num_full_dof);
   cmd_eff.resize(num_full_dof);
 
-  cmd_cart_vel.resize(6); // SE(3)
+  pos.resize(num_full_dof);
+  vel.resize(num_full_dof);
+  eff.resize(num_full_dof);
+
+  pos_offsets.resize(num_arm_dof);
+  soft_limits.resize(num_full_dof);
+
+  for (std::size_t i = 0; i < pos_offsets.size(); ++i)
+    pos_offsets[i] = 0.0;
+
+  for (std::size_t i = 0; i < cmd_vel.size(); ++i)
+    cmd_vel[i] = 0.0;
+
+  // connect and register the joint state interface.
+  // this gives joint states (pos, vel, eff) back as an output.
+  hardware_interface::JointStateHandle state_handle_base(
+      "j2n6s200_joint_1", &pos[0], &vel[0], &eff[0]);
+  hardware_interface::JointStateHandle state_handle_shoulder(
+      "j2n6s200_joint_2", &pos[1], &vel[1], &eff[1]);
+  hardware_interface::JointStateHandle state_handle_elbow(
+      "j2n6s200_joint_3", &pos[2], &vel[2], &eff[2]);
+  hardware_interface::JointStateHandle state_handle_wrist0(
+      "j2n6s200_joint_4", &pos[3], &vel[3], &eff[3]);
+  hardware_interface::JointStateHandle state_handle_wrist1(
+      "j2n6s200_joint_5", &pos[4], &vel[4], &eff[4]);
+  hardware_interface::JointStateHandle state_handle_wrist2(
+      "j2n6s200_joint_6", &pos[5], &vel[5], &eff[5]);
+  hardware_interface::JointStateHandle state_handle_finger0(
+      "j2n6s200_joint_finger_1", &pos[6], &vel[6], &eff[6]);
+  hardware_interface::JointStateHandle state_handle_finger1(
+      "j2n6s200_joint_finger_2", &pos[7], &vel[7], &eff[7]);
+
+  jnt_state_interface.registerHandle(state_handle_base);
+  jnt_state_interface.registerHandle(state_handle_shoulder);
+  jnt_state_interface.registerHandle(state_handle_elbow);
+  jnt_state_interface.registerHandle(state_handle_wrist0);
+  jnt_state_interface.registerHandle(state_handle_wrist1);
+  jnt_state_interface.registerHandle(state_handle_wrist2);
+  jnt_state_interface.registerHandle(state_handle_finger0);
+  jnt_state_interface.registerHandle(state_handle_finger1);
+
+  registerInterface(&jnt_state_interface);
+
+  // connect and register the joint position interface
+  // this takes joint velocities in as a command.
+  hardware_interface::JointHandle vel_handle_base(
+      jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_vel[0]);
+  hardware_interface::JointHandle vel_handle_shoulder(
+      jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_vel[1]);
+  hardware_interface::JointHandle vel_handle_elbow(
+      jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_vel[2]);
+  hardware_interface::JointHandle vel_handle_wrist0(
+      jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_vel[3]);
+  hardware_interface::JointHandle vel_handle_wrist1(
+      jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_vel[4]);
+  hardware_interface::JointHandle vel_handle_wrist2(
+      jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_vel[5]);
+  hardware_interface::JointHandle vel_handle_finger0(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_vel[6]);
+  hardware_interface::JointHandle vel_handle_finger1(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_vel[7]);
+
+  jnt_vel_interface.registerHandle(vel_handle_base);
+  jnt_vel_interface.registerHandle(vel_handle_shoulder);
+  jnt_vel_interface.registerHandle(vel_handle_elbow);
+  jnt_vel_interface.registerHandle(vel_handle_wrist0);
+  jnt_vel_interface.registerHandle(vel_handle_wrist1);
+  jnt_vel_interface.registerHandle(vel_handle_wrist2);
+  jnt_vel_interface.registerHandle(vel_handle_finger0);
+  jnt_vel_interface.registerHandle(vel_handle_finger1);
+
+  registerInterface(&jnt_vel_interface);
+
+  // connect and register the joint position interface
+  // this takes joint positions in as a command.
+  hardware_interface::JointHandle pos_handle_base(
+      jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_pos[0]);
+  hardware_interface::JointHandle pos_handle_shoulder(
+      jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_pos[1]);
+  hardware_interface::JointHandle pos_handle_elbow(
+      jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_pos[2]);
+  hardware_interface::JointHandle pos_handle_wrist0(
+      jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_pos[3]);
+  hardware_interface::JointHandle pos_handle_wrist1(
+      jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_pos[4]);
+  hardware_interface::JointHandle pos_handle_wrist2(
+      jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_pos[5]);
+  hardware_interface::JointHandle pos_handle_finger0(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_pos[6]);
+  hardware_interface::JointHandle pos_handle_finger1(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_pos[7]);
+
+  jnt_pos_interface.registerHandle(pos_handle_base);
+  jnt_pos_interface.registerHandle(pos_handle_shoulder);
+  jnt_pos_interface.registerHandle(pos_handle_elbow);
+  jnt_pos_interface.registerHandle(pos_handle_wrist0);
+  jnt_pos_interface.registerHandle(pos_handle_wrist1);
+  jnt_pos_interface.registerHandle(pos_handle_wrist2);
+  jnt_pos_interface.registerHandle(pos_handle_finger0);
+  jnt_pos_interface.registerHandle(pos_handle_finger1);
+
+  registerInterface(&jnt_pos_interface);
+
+  ROS_INFO("Register Effort Interface...");
+
+  // connect and register the joint position interface
+  // this takes joint effort in as a command.
+  hardware_interface::JointHandle eff_handle_base(
+      jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_eff[0]);
+  hardware_interface::JointHandle eff_handle_shoulder(
+      jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_eff[1]);
+  hardware_interface::JointHandle eff_handle_elbow(
+      jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_eff[2]);
+  hardware_interface::JointHandle eff_handle_wrist0(
+      jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_eff[3]);
+  hardware_interface::JointHandle eff_handle_wrist1(
+      jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_eff[4]);
+  hardware_interface::JointHandle eff_handle_wrist2(
+      jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_eff[5]);
+  hardware_interface::JointHandle eff_handle_finger0(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_eff[6]);
+  hardware_interface::JointHandle eff_handle_finger1(
+      jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_eff[7]);
+
+  jnt_eff_interface.registerHandle(eff_handle_base);
+  jnt_eff_interface.registerHandle(eff_handle_shoulder);
+  jnt_eff_interface.registerHandle(eff_handle_elbow);
+  jnt_eff_interface.registerHandle(eff_handle_wrist0);
+  jnt_eff_interface.registerHandle(eff_handle_wrist1);
+  jnt_eff_interface.registerHandle(eff_handle_wrist2);
+  jnt_eff_interface.registerHandle(eff_handle_finger0);
+  jnt_eff_interface.registerHandle(eff_handle_finger1);
+
+  registerInterface(&jnt_eff_interface);
+
+  // connect and register the joint mode interface
+  // this is needed to determine which control mode is needed
+  hardware_interface::JointModeHandle mode_handle("joint_mode", &joint_mode);
+  jm_interface.registerHandle(mode_handle);
+  registerInterface(&jm_interface);
+
+  eff_stall = false;
+
+  // Start Up Kinova API
+  int r = NO_ERROR_KINOVA;
+
+  ROS_INFO("Attempting to inialize API...");
+  r = InitAPI();
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not initialize API: Error code %d", r);
+  }
+
+  ROS_INFO("Attempting to initialize fingers...");
+  r = InitFingers();
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not initialize fingers: Error code %d", r);
+  }
+
+  ROS_INFO("Attempting to start API control of the robot...");
+  r = StartControlAPI();
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not start API Control: Error code %d", r);
+  }
+
+  ROS_INFO("Attempting to set angular control...");
+  r = SetAngularControl();
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not set angular control: Error code %d", r);
+  }
+
+  // get soft limits from rosparams
+  if (nh.hasParam("soft_limits/eff")) {
+    nh.getParam("soft_limits/eff", soft_limits);
+  } else {
+    ROS_WARN("No JACO soft limits in param server! Using defaults.");
+    const double defaults[] = {16, 16, 16, 10, 10, 10, 1.3, 1.3};
+    soft_limits.assign(defaults, defaults + num_full_dof);
+  }
+  ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]",
+           soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3],
+           soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);
+
+  // initialize default positions
+  initializeOffsets();
+
+  // Default to velocity mode
+  // This will also clear out any trajectories at the beginning.
+  joint_mode = hardware_interface::JointCommandModes::MODE_VELOCITY;
+  last_mode = hardware_interface::JointCommandModes::BEGIN;
+
+  // Default to no grav comp
+  mUseGravComp = false;
+  mInTorqueMode = false;
+}
+
+JacoRobot::JacoRobot(ros::NodeHandle nh) {
+  ROS_INFO("Starting to initialize jaco_hardware");
+  int i;
+  cmd_pos.resize(num_full_dof);
+  cmd_vel.resize(num_full_dof);
+  cmd_eff.resize(num_full_dof);
 
   pos.resize(num_full_dof);
   vel.resize(num_full_dof);
@@ -153,13 +353,6 @@ JacoRobot::JacoRobot(ros::NodeHandle nh) {
   jm_interface.registerHandle(mode_handle);
   registerInterface(&jm_interface);
 
-  // connect and register the joint mode interface
-  // this takes cartesian (workspace) velocity in as a command
-  pr_hardware_interfaces::CartesianVelocityHandle cartesian_velocity_handle(
-      "cart_vel", &cmd_cart_vel);
-  cart_vel_interface.registerHandle(cartesian_velocity_handle);
-  registerInterface(&cart_vel_interface);
-
   eff_stall = false;
 
   // Start Up Kinova API
@@ -189,6 +382,12 @@ JacoRobot::JacoRobot(ros::NodeHandle nh) {
     ROS_ERROR("Could not set angular control: Error code %d", r);
   }
 
+  ROS_INFO("Attempting to set torque safety factor...");
+  r = SetTorqueSafetyFactor(1.0f);
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not send : Error code %d", r);
+  }
+
   // get soft limits from rosparams
   if (nh.hasParam("soft_limits/eff")) {
     nh.getParam("soft_limits/eff", soft_limits);
@@ -212,184 +411,6 @@ JacoRobot::JacoRobot(ros::NodeHandle nh) {
   // Default to no grav comp
   mUseGravComp = false;
   mInTorqueMode = false;
-}
-
-JacoRobot::JacoRobot(ros::NodeHandle nh)
-{
-    ROS_INFO("Starting to initialize jaco_hardware");
-    int i;
-    cmd_pos.resize(num_full_dof);
-    cmd_vel.resize(num_full_dof);
-    cmd_eff.resize(num_full_dof);
-
-    pos.resize(num_full_dof);
-    vel.resize(num_full_dof);
-    eff.resize(num_full_dof);
-    
-    pos_offsets.resize(num_arm_dof);
-    soft_limits.resize(num_full_dof);
-
-    for(std::size_t i = 0; i < pos_offsets.size(); ++i)
-        pos_offsets[i] = 0.0;
-
-    for(std::size_t i = 0; i < cmd_vel.size(); ++i)
-       cmd_vel[i] = 0.0;
-
-    // connect and register the joint state interface.
-    // this gives joint states (pos, vel, eff) back as an output.
-    hardware_interface::JointStateHandle state_handle_base("j2n6s200_joint_1", &pos[0], &vel[0], &eff[0]);
-    hardware_interface::JointStateHandle state_handle_shoulder("j2n6s200_joint_2", &pos[1], &vel[1], &eff[1]);
-    hardware_interface::JointStateHandle state_handle_elbow("j2n6s200_joint_3", &pos[2], &vel[2], &eff[2]);
-    hardware_interface::JointStateHandle state_handle_wrist0("j2n6s200_joint_4", &pos[3], &vel[3], &eff[3]);
-    hardware_interface::JointStateHandle state_handle_wrist1("j2n6s200_joint_5", &pos[4], &vel[4], &eff[4]);
-    hardware_interface::JointStateHandle state_handle_wrist2("j2n6s200_joint_6", &pos[5], &vel[5], &eff[5]);
-    hardware_interface::JointStateHandle state_handle_finger0("j2n6s200_joint_finger_1", &pos[6], &vel[6], &eff[6]);
-    hardware_interface::JointStateHandle state_handle_finger1("j2n6s200_joint_finger_2", &pos[7], &vel[7], &eff[7]);
-
-    jnt_state_interface.registerHandle(state_handle_base);
-    jnt_state_interface.registerHandle(state_handle_shoulder);
-    jnt_state_interface.registerHandle(state_handle_elbow);
-    jnt_state_interface.registerHandle(state_handle_wrist0);
-    jnt_state_interface.registerHandle(state_handle_wrist1);
-    jnt_state_interface.registerHandle(state_handle_wrist2);
-    jnt_state_interface.registerHandle(state_handle_finger0);
-    jnt_state_interface.registerHandle(state_handle_finger1);
-
-    registerInterface(&jnt_state_interface);
-
-    // connect and register the joint position interface
-    // this takes joint velocities in as a command.
-    hardware_interface::JointHandle vel_handle_base(jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_vel[0]);
-    hardware_interface::JointHandle vel_handle_shoulder(jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_vel[1]);
-    hardware_interface::JointHandle vel_handle_elbow(jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_vel[2]);
-    hardware_interface::JointHandle vel_handle_wrist0(jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_vel[3]);
-    hardware_interface::JointHandle vel_handle_wrist1(jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_vel[4]);
-    hardware_interface::JointHandle vel_handle_wrist2(jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_vel[5]);
-    hardware_interface::JointHandle vel_handle_finger0(jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_vel[6]);
-    hardware_interface::JointHandle vel_handle_finger1(jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_vel[7]);
-
-    jnt_vel_interface.registerHandle(vel_handle_base);
-    jnt_vel_interface.registerHandle(vel_handle_shoulder);
-    jnt_vel_interface.registerHandle(vel_handle_elbow);
-    jnt_vel_interface.registerHandle(vel_handle_wrist0);
-    jnt_vel_interface.registerHandle(vel_handle_wrist1);
-    jnt_vel_interface.registerHandle(vel_handle_wrist2);
-    jnt_vel_interface.registerHandle(vel_handle_finger0);
-    jnt_vel_interface.registerHandle(vel_handle_finger1);
-
-    registerInterface(&jnt_vel_interface);
-
-    // connect and register the joint position interface
-    // this takes joint positions in as a command.
-    hardware_interface::JointHandle pos_handle_base(jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_pos[0]);
-    hardware_interface::JointHandle pos_handle_shoulder(jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_pos[1]);
-    hardware_interface::JointHandle pos_handle_elbow(jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_pos[2]);
-    hardware_interface::JointHandle pos_handle_wrist0(jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_pos[3]);
-    hardware_interface::JointHandle pos_handle_wrist1(jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_pos[4]);
-    hardware_interface::JointHandle pos_handle_wrist2(jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_pos[5]);
-    hardware_interface::JointHandle pos_handle_finger0(jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_pos[6]);
-    hardware_interface::JointHandle pos_handle_finger1(jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_pos[7]);
-
-    jnt_pos_interface.registerHandle(pos_handle_base);
-    jnt_pos_interface.registerHandle(pos_handle_shoulder);
-    jnt_pos_interface.registerHandle(pos_handle_elbow);
-    jnt_pos_interface.registerHandle(pos_handle_wrist0);
-    jnt_pos_interface.registerHandle(pos_handle_wrist1);
-    jnt_pos_interface.registerHandle(pos_handle_wrist2);
-    jnt_pos_interface.registerHandle(pos_handle_finger0);
-    jnt_pos_interface.registerHandle(pos_handle_finger1);
-
-    registerInterface(&jnt_pos_interface);
-
-
-    ROS_INFO("Register Effort Interface...");
-
-    // connect and register the joint position interface
-    // this takes joint effort in as a command.
-    hardware_interface::JointHandle eff_handle_base(jnt_state_interface.getHandle("j2n6s200_joint_1"), &cmd_eff[0]);
-    hardware_interface::JointHandle eff_handle_shoulder(jnt_state_interface.getHandle("j2n6s200_joint_2"), &cmd_eff[1]);
-    hardware_interface::JointHandle eff_handle_elbow(jnt_state_interface.getHandle("j2n6s200_joint_3"), &cmd_eff[2]);
-    hardware_interface::JointHandle eff_handle_wrist0(jnt_state_interface.getHandle("j2n6s200_joint_4"), &cmd_eff[3]);
-    hardware_interface::JointHandle eff_handle_wrist1(jnt_state_interface.getHandle("j2n6s200_joint_5"), &cmd_eff[4]);
-    hardware_interface::JointHandle eff_handle_wrist2(jnt_state_interface.getHandle("j2n6s200_joint_6"), &cmd_eff[5]);
-    hardware_interface::JointHandle eff_handle_finger0(jnt_state_interface.getHandle("j2n6s200_joint_finger_1"), &cmd_eff[6]);
-    hardware_interface::JointHandle eff_handle_finger1(jnt_state_interface.getHandle("j2n6s200_joint_finger_2"), &cmd_eff[7]);
-
-    jnt_eff_interface.registerHandle(eff_handle_base);
-    jnt_eff_interface.registerHandle(eff_handle_shoulder);
-    jnt_eff_interface.registerHandle(eff_handle_elbow);
-    jnt_eff_interface.registerHandle(eff_handle_wrist0);
-    jnt_eff_interface.registerHandle(eff_handle_wrist1);
-    jnt_eff_interface.registerHandle(eff_handle_wrist2);
-    jnt_eff_interface.registerHandle(eff_handle_finger0);
-    jnt_eff_interface.registerHandle(eff_handle_finger1);
-
-    registerInterface(&jnt_eff_interface);
-
-    // connect and register the joint mode interface
-    // this is needed to determine which control mode is needed
-    hardware_interface::JointModeHandle mode_handle("joint_mode", &joint_mode);
-    jm_interface.registerHandle(mode_handle);
-    registerInterface(&jm_interface);
-
-    eff_stall = false;
-
-    // Start Up Kinova API
-    int r = NO_ERROR_KINOVA;
-    
-    ROS_INFO("Attempting to inialize API...");
-    r = InitAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not initialize API: Error code %d",r);
-    }
-    
-    ROS_INFO("Attempting to initialize fingers...");
-    r = InitFingers();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not initialize fingers: Error code %d",r);
-    }
-
-    ROS_INFO("Attempting to start API control of the robot...");
-    r = StartControlAPI();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not start API Control: Error code %d",r);
-    }
-    
-    ROS_INFO("Attempting to set angular control...");
-    r = SetAngularControl();
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not set angular control: Error code %d",r);
-    }
-
-    ROS_INFO("Attempting to set torque safety factor...");
-    r = SetTorqueSafetyFactor(1.0f);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
-    }
-    
-    // get soft limits from rosparams
-    if (nh.hasParam("soft_limits/eff")) {
-      nh.getParam("soft_limits/eff", soft_limits);
-    } else {
-      ROS_WARN("No JACO soft limits in param server! Using defaults.");
-      const double defaults[] = {16,16,16,10,10,10,1.3,1.3};
-      soft_limits.assign(defaults, defaults+num_full_dof);
-    }
-    ROS_INFO("Set soft_limits for eff to: [%f,%f,%f,%f,%f,%f,%f,%f]",
-               soft_limits[0], soft_limits[1], soft_limits[2], soft_limits[3],
-               soft_limits[4], soft_limits[5], soft_limits[6], soft_limits[7]);
-
-    // initialize default positions
-    initializeOffsets();
-
-    // Default to velocity mode
-    // This will also clear out any trajectories at the beginning.
-    joint_mode = hardware_interface::JointCommandModes::MODE_VELOCITY;
-    last_mode = hardware_interface::JointCommandModes::BEGIN;
-
-    // Default to no grav comp
-    mUseGravComp = false;
-    mInTorqueMode = false;
 }
 
 void JacoRobot::initializeOffsets() {
@@ -443,11 +464,11 @@ bool JacoRobot::setTorqueMode(bool torqueMode) {
 
   int r = NO_ERROR_KINOVA;
 
-    r = SwitchTrajectoryTorque(torqueMode ? TORQUE : POSITION);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
-        return false;
-    }
+  r = SwitchTrajectoryTorque(torqueMode ? TORQUE : POSITION);
+  if (r != NO_ERROR_KINOVA) {
+    ROS_ERROR("Could not send : Error code %d", r);
+    return false;
+  }
 
   mInTorqueMode = torqueMode;
   return true;
@@ -483,13 +504,13 @@ bool JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
 }
 
 bool JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
-    if (!use || params.size() == 0) {
-        mUseGravComp = false;
-        return false || !use;
-    }
+  if (!use || params.size() == 0) {
+    mUseGravComp = false;
+    return false || !use;
+  }
 
-    float arr[OPTIMAL_Z_PARAM_SIZE] = {0};
-    std::copy(params.begin(), params.end(), arr);
+  float arr[OPTIMAL_Z_PARAM_SIZE] = {0};
+  std::copy(params.begin(), params.end(), arr);
 
   float arr[OPTIMAL_Z_PARAM_SIZE] = {0};
   std::copy(params.begin(), params.end(), arr);
@@ -603,15 +624,14 @@ bool JacoRobot::zeroTorqueSensors() {
   return true;
 }
 
-void JacoRobot::sendTorqueCommand(const std::vector<double>& command)
-{
-    // Check if in torque mode
-    int mode = 0;
-    GetTrajectoryTorqueMode(mode);
-    if(!mode) {
-        ROS_WARN("Dropped out of torque mode. Retrying...");
-        mInTorqueMode = false;
-    }
+void JacoRobot::sendTorqueCommand(const std::vector<double> &command) {
+  // Check if in torque mode
+  int mode = 0;
+  GetTrajectoryTorqueMode(mode);
+  if (!mode) {
+    ROS_WARN("Dropped out of torque mode. Retrying...");
+    mInTorqueMode = false;
+  }
 
   if (!mInTorqueMode) {
     if (!setTorqueMode(true)) {
@@ -635,38 +655,36 @@ void JacoRobot::enterGravComp() {
   joint_mode = hardware_interface::JointCommandModes::EMERGENCY_STOP;
 }
 
-void JacoRobot::write(void)
-{
-    // Clear all commands when switching modes
-    if (last_mode != joint_mode)
-    {
-        EraseAllTrajectories();
-        setTorqueMode(false);
-        last_mode = joint_mode;
-    }
+void JacoRobot::write(void) {
+  // Clear all commands when switching modes
+  if (last_mode != joint_mode) {
+    EraseAllTrajectories();
+    setTorqueMode(false);
+    last_mode = joint_mode;
+  }
 
-    vector<double> zero(num_full_dof, 0.0);
+  vector<double> zero(num_full_dof, 0.0);
 
-    switch(joint_mode) {
-        case hardware_interface::JointCommandModes::MODE_VELOCITY:
-            sendVelocityCommand(cmd_vel);
-            break;
-        case hardware_interface::JointCommandModes::MODE_POSITION:
-            sendPositionCommand(cmd_pos);
-            break;
-        case hardware_interface::JointCommandModes::MODE_EFFORT:
-            sendTorqueCommand(cmd_eff);
-            break;
-        case hardware_interface::JointCommandModes::EMERGENCY_STOP:
-            // Drop to gravity compensation
-            if(mUseGravComp) {
-                sendTorqueCommand(zero);
-                break;
-            }
-        default:
-            // Stop Bot
-            sendVelocityCommand(zero);
+  switch (joint_mode) {
+  case hardware_interface::JointCommandModes::MODE_VELOCITY:
+    sendVelocityCommand(cmd_vel);
+    break;
+  case hardware_interface::JointCommandModes::MODE_POSITION:
+    sendPositionCommand(cmd_pos);
+    break;
+  case hardware_interface::JointCommandModes::MODE_EFFORT:
+    sendTorqueCommand(cmd_eff);
+    break;
+  case hardware_interface::JointCommandModes::EMERGENCY_STOP:
+    // Drop to gravity compensation
+    if (mUseGravComp) {
+      sendTorqueCommand(zero);
+      break;
     }
+  default:
+    // Stop Bot
+    sendVelocityCommand(zero);
+  }
 }
 
 void JacoRobot::checkForStall(void) {
