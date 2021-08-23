@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     controller_manager
     hardware_interface
-    pr_hardware_interfaces
     sensor_msgs
     )
 

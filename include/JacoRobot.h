@@ -6,8 +6,7 @@
 #include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 
-#include <pr_hardware_interfaces/CartesianVelocityInterface.h>
-
+#include <hardware_interface/robot_hw.h>
 #include <controller_manager/controller_manager.h>
 #include <hardware_interface/robot_hw.h>
 
@@ -36,75 +35,74 @@ static const int num_finger_dof = 2;
 
 static const ROBOT_TYPE our_robot_type = JACOV2_6DOF_ASSISTIVE;
 
-class JacoRobot : public hardware_interface::RobotHW {
-public:
-  JacoRobot(ros::NodeHandle nh);
+class JacoRobot: public hardware_interface::RobotHW
+{
+    public:
+        JacoRobot(ros::NodeHandle nh);
 
-  virtual ~JacoRobot();
+        virtual ~JacoRobot();
+        
+        void initializeOffsets();
+        
+        ros::Time get_time(void);
 
-  void initializeOffsets();
+        ros::Duration get_period(void);
 
-  ros::Time get_time(void);
+        inline double degreesToRadians(double degrees);
+        inline double radiansToDegrees(double radians);
+        inline double radiansToFingerTicks(double radians);
+        inline double fingerTicksToRadians(double ticks);
 
-  ros::Duration get_period(void);
+        void sendPositionCommand(const std::vector<double>& command);
+        void sendVelocityCommand(const std::vector<double>& command);
+        void sendTorqueCommand(const std::vector<double>& command);
 
-  inline double degreesToRadians(double degrees);
-  inline double radiansToDegrees(double radians);
-  inline double radiansToFingerTicks(double radians);
-  inline double fingerTicksToRadians(double ticks);
+        void write(void);
+        void read(void);
 
-  void sendPositionCommand(const std::vector<double> &command);
-  void sendVelocityCommand(const std::vector<double> &command);
-  void sendTorqueCommand(const std::vector<double> &command);
-  void sendCartesianVelocityCommand(const std::vector<double> &command);
+        void checkForStall(void);
 
-  void write(void);
-  void read(void);
+        // Gravcomp calibration functions
+        std::vector<float> calcGravcompParams(void);
+        bool zeroTorqueSensors(void); 
 
-  void checkForStall(void);
+        // Gravcomp functions
+        // Return true if mode successfully switched.
+        void enterGravComp(void);
+        bool useGravcompForEStop(bool use, std::vector<float> params = std::vector<float>());
+        bool useGravcompForEStop(bool use, std::string fileName);
+        bool setTorqueMode(bool torqueMode);
+        bool eff_stall;
 
-  // Gravcomp functions
-  std::vector<float> calcGravcompParams(void);
-  bool useGravcompForEStop(bool use,
-                           std::vector<float> params = std::vector<float>());
-  bool useGravcompForEStop(bool use, std::string fileName);
-  bool setTorqueMode(bool torqueMode);
-  void enterGravComp(void);
-  bool zeroTorqueSensors(void);
+    private:
+        hardware_interface::JointStateInterface jnt_state_interface;
+        hardware_interface::EffortJointInterface jnt_eff_interface;
+        hardware_interface::VelocityJointInterface jnt_vel_interface;
+        hardware_interface::PositionJointInterface jnt_pos_interface;
+        hardware_interface::JointModeInterface jm_interface;
 
-  bool eff_stall;
+        // Joint Commands
+        vector<double> cmd_pos;
+        vector<double> cmd_vel;
+        vector<double> cmd_eff;
+        vector<double> cmd_cart_vel;
 
-private:
-  hardware_interface::JointStateInterface jnt_state_interface;
-  hardware_interface::EffortJointInterface jnt_eff_interface;
-  hardware_interface::VelocityJointInterface jnt_vel_interface;
-  hardware_interface::PositionJointInterface jnt_pos_interface;
-  hardware_interface::JointModeInterface jm_interface;
+        // Joint State
+        vector<double> pos;
+        vector<double> vel;
+        vector<double> eff;
 
-  pr_hardware_interfaces::CartesianVelocityInterface cart_vel_interface;
+        // Parameters
+        vector<double> pos_offsets;
+        vector<double> soft_limits;
 
-  // Joint Commands
-  vector<double> cmd_pos;
-  vector<double> cmd_vel;
-  vector<double> cmd_eff;
-  vector<double> cmd_cart_vel;
+        // Switch between joint command type
+        hardware_interface::JointCommandModes joint_mode; 
+        hardware_interface::JointCommandModes last_mode;
 
-  // Joint State
-  vector<double> pos;
-  vector<double> vel;
-  vector<double> eff;
-
-  // Parameters
-  vector<double> pos_offsets;
-  vector<double> soft_limits;
-
-  // Switch between joint command type
-  hardware_interface::JointCommandModes joint_mode;
-  hardware_interface::JointCommandModes last_mode;
-
-  // Only do grav comp if we have the parameters
-  bool mUseGravComp;
-  bool mInTorqueMode;
+        // Only do grav comp if we have the parameters
+        bool mUseGravComp;
+        bool mInTorqueMode;
 };
 
 #endif

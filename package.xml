@@ -2,12 +2,12 @@
 <package>
   <name>jaco_hardware</name>
   <version>0.2.0</version>
-  <description>A ros_control hardware interface for the Mico arm</description>
+  <description>A ros_control hardware interface for the Jaco2 6DOF arm</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="bwr@vt.edu">Ben Weinstein-Raun</maintainer>
+  <maintainer email="ekgordon@cs.uw.edu">Ethan K. Gordon</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -42,7 +42,6 @@
   <build_depend>roscpp</build_depend>
   <build_depend>controller_manager</build_depend>
   <build_depend>hardware_interface</build_depend>
-  <build_depend>pr_hardware_interfaces</build_depend>
 
   <build_depend>sensor_msgs</build_depend>
 
