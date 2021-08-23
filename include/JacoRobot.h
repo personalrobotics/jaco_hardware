@@ -60,14 +60,16 @@ class JacoRobot: public hardware_interface::RobotHW
 
         void checkForStall(void);
 
-        // Gravcomp functions
+        // Gravcomp calibration functions
         std::vector<float> calcGravcompParams(void);
+        bool zeroTorqueSensors(void); 
+
+        // Gravcomp functions
+        // Return true if mode successfully switched.
+        void enterGravComp(void);
         bool useGravcompForEStop(bool use, std::vector<float> params = std::vector<float>());
         bool useGravcompForEStop(bool use, std::string fileName);
         bool setTorqueMode(bool torqueMode);
-        void enterGravComp(void);
-        bool zeroTorqueSensors(void); 
-
         bool eff_stall;
 
     private:

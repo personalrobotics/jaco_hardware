@@ -150,8 +150,14 @@ JacoRobot::JacoRobot(ros::NodeHandle nh)
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not set angular control: Error code %d",r);
     }
+
+    ROS_INFO("Attempting to set torque safety factor...");
+    r = SetTorqueSafetyFactor(1.0f);
+    if (r != NO_ERROR_KINOVA) {
+        ROS_ERROR("Could not send : Error code %d",r);
+    }
     
-      // get soft limits from rosparams
+    // get soft limits from rosparams
     if (nh.hasParam("soft_limits/eff")) {
       nh.getParam("soft_limits/eff", soft_limits);
     } else {
@@ -257,12 +263,6 @@ bool JacoRobot::setTorqueMode(bool torqueMode) {
 
     int r = NO_ERROR_KINOVA;
 
-    r = SetTorqueSafetyFactor(1.0f);
-    if (r != NO_ERROR_KINOVA) {
-        ROS_ERROR("Could not send : Error code %d",r);
-        return false;
-    }
-
     r = SwitchTrajectoryTorque(torqueMode ? TORQUE : POSITION);
     if (r != NO_ERROR_KINOVA) {
         ROS_ERROR("Could not send : Error code %d",r);
@@ -305,7 +305,7 @@ bool JacoRobot::useGravcompForEStop(bool use, std::string fileName) {
 bool JacoRobot::useGravcompForEStop(bool use, std::vector<float> params) {
     if (!use || params.size() == 0) {
         mUseGravComp = false;
-        return false;
+        return false || !use;
     }
 
     float arr[OPTIMAL_Z_PARAM_SIZE] = {0};

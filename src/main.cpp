@@ -4,6 +4,8 @@
 #include <ros/rate.h>
 #include <ros/console.h>
 #include <sstream>
+#include <cstdio>
+#include <cerrno>
 
 int main(int argc, char* argv[])
 {
@@ -30,6 +32,17 @@ int main(int argc, char* argv[])
                 std::ostream_iterator<float>(oss, ","));
             oss << params.back();
             ROS_INFO_STREAM("Gravcomp Params: " << oss.str());
+
+            std::string gravCompFile = "ParametersOptimal_Z.txt";
+            if(nh.getParam("grav_comp_file", gravCompFile)) {
+                std::string path = ros::package::getPath("jaco_hardware") 
+                    + "/" + gravCompFile;
+                if(std::rename("ParametersOptimal_Z.txt", path.c_str()) < 0) {
+                    std::perror("Error moving grav comp file to destionation.");
+                    gravCompFile = "ParametersOptimal_Z.txt";
+                }
+            }
+            ROS_INFO_STREAM("Params written to " << gravCompFile);
             return 0;
         }
         return -1;
@@ -52,7 +65,6 @@ int main(int argc, char* argv[])
 
     bool enableGravComp = false;
     nh.getParam("grav_comp", enableGravComp);
-    ROS_INFO_STREAM("Enable gravcomp? " << enableGravComp);
     if(enableGravComp) {
       nh.setParam("grav_comp", false);
 
@@ -61,7 +73,7 @@ int main(int argc, char* argv[])
       nh.getParam("grav_comp_file", gravCompFile);
       ROS_INFO_STREAM("Enabling GravComp with Params: " << gravCompFile);
       if(robot.useGravcompForEStop(true, gravCompFile)) {
-        ROS_INFO_STREAM("Gravcomp Enabled with Params: " << gravCompFile);
+        ROS_INFO_STREAM("Gravcomp Enabled!");
 
         // Whether to enter grav comp on start-up
         bool enterGravComp = false;
@@ -74,8 +86,6 @@ int main(int argc, char* argv[])
       } // end if(Gravcomp successfuly enabled)
     } // end if(enableGravComp)
     nh.setParam("grav_comp_file", "calib/GravComParams_Empty.txt");
-
-      
 
     ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
