@@ -12,6 +12,7 @@
 // ros
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <ros/package.h>
 
 // kinova api
 #include <kinova/KinovaTypes.h>
@@ -29,6 +30,8 @@ static const double hardcoded_pos_midpoints[6] = { 0.0, M_PI, M_PI, 0.0, 0.0, 0.
 static const int num_full_dof = 8;
 static const int num_arm_dof = 6;
 static const int num_finger_dof = 2;
+
+static const ROBOT_TYPE our_robot_type = JACOV2_6DOF_ASSISTIVE;
 
 class JacoRobot: public hardware_interface::RobotHW
 {
@@ -57,6 +60,16 @@ class JacoRobot: public hardware_interface::RobotHW
 
         void checkForStall(void);
 
+        // Gravcomp calibration functions
+        std::vector<float> calcGravcompParams(void);
+        bool zeroTorqueSensors(void); 
+
+        // Gravcomp functions
+        // Return true if mode successfully switched.
+        void enterGravComp(void);
+        bool useGravcompForEStop(bool use, std::vector<float> params = std::vector<float>());
+        bool useGravcompForEStop(bool use, std::string fileName);
+        bool setTorqueMode(bool torqueMode);
         bool eff_stall;
 
     private:
@@ -84,6 +97,10 @@ class JacoRobot: public hardware_interface::RobotHW
         // Switch between joint command type
         hardware_interface::JointCommandModes joint_mode; 
         hardware_interface::JointCommandModes last_mode;
+
+        // Only do grav comp if we have the parameters
+        bool mUseGravComp;
+        bool mInTorqueMode;
 };
 
 #endif
