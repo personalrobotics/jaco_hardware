@@ -46,64 +46,62 @@ int main(int argc, char *argv[]) {
     }
     return -1;
   }
-  return -1;
-}
 
-    // Zero Torque Sensors
-    bool zeroTorque = false;
-    nh.getParam("run_zero_torque", zeroTorque);
-    if(zeroTorque) {
-        nh.setParam("run_zero_torque", false);
-        ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
-        std::cin.get();
-        bool ret = robot.zeroTorqueSensors();
-        if(!ret) {
-            ROS_ERROR("Could not zero torque sensors");
-            return -1;
-        }
-        return 0;
+  // Zero Torque Sensors
+  bool zeroTorque = false;
+  nh.getParam("run_zero_torque", zeroTorque);
+  if (zeroTorque) {
+    nh.setParam("run_zero_torque", false);
+    ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
+    std::cin.get();
+    bool ret = robot.zeroTorqueSensors();
+    if (!ret) {
+      ROS_ERROR("Could not zero torque sensors");
+      return -1;
     }
-
-    bool enableGravComp = false;
-    nh.getParam("grav_comp", enableGravComp);
-    if(enableGravComp) {
-
-  // Activate default grav comp parameters
-  std::string gravCompFile = "calib/GravComParams_Empty.txt";
-  nh.getParam("grav_comp_file", gravCompFile);
-  ROS_INFO_STREAM("Enabling GravComp with Params: " << gravCompFile);
-  if (robot.useGravcompForEStop(true, gravCompFile)) {
-    ROS_INFO_STREAM("Gravcomp Enabled!");
-
-        // Whether to enter grav comp on start-up
-        bool enterGravComp = false;
-        nh.getParam("run_grav_comp", enterGravComp);
-        if(enterGravComp) {
-            ROS_INFO_STREAM("Entering Grav Comp...");
-            nh.setParam("run_grav_comp", false);
-            robot.enterGravComp();
-        }
-      } // end if(Gravcomp successfuly enabled)
-    } // end if(enableGravComp)
-
-ROS_INFO_STREAM("JACO Hardware Setup Complete!");
-
-// Ros control rate of 100Hz
-ros::Rate controlRate(100.0);
-while (ros::ok()) {
-  robot.read();
-  if (robot.eff_stall == true) {
-    cm.update(robot.get_time(), robot.get_period(), true);
-  } else {
-    cm.update(robot.get_time(), robot.get_period());
+    return 0;
   }
 
-  robot.write();
-  controlRate.sleep();
-}
+  bool enableGravComp = false;
+  nh.getParam("grav_comp", enableGravComp);
+  if (enableGravComp) {
 
-// Ensure we go rigid
-robot.setTorqueMode(false);
+    // Activate default grav comp parameters
+    std::string gravCompFile = "calib/GravComParams_Empty.txt";
+    nh.getParam("grav_comp_file", gravCompFile);
+    ROS_INFO_STREAM("Enabling GravComp with Params: " << gravCompFile);
+    if (robot.useGravcompForEStop(true, gravCompFile)) {
+      ROS_INFO_STREAM("Gravcomp Enabled!");
 
-return 0;
+      // Whether to enter grav comp on start-up
+      bool enterGravComp = false;
+      nh.getParam("run_grav_comp", enterGravComp);
+      if (enterGravComp) {
+        ROS_INFO_STREAM("Entering Grav Comp...");
+        nh.setParam("run_grav_comp", false);
+        robot.enterGravComp();
+      }
+    } // end if(Gravcomp successfuly enabled)
+  }   // end if(enableGravComp)
+
+  ROS_INFO_STREAM("JACO Hardware Setup Complete!");
+
+  // Ros control rate of 100Hz
+  ros::Rate controlRate(100.0);
+  while (ros::ok()) {
+    robot.read();
+    if (robot.eff_stall == true) {
+      cm.update(robot.get_time(), robot.get_period(), true);
+    } else {
+      cm.update(robot.get_time(), robot.get_period());
+    }
+
+    robot.write();
+    controlRate.sleep();
+  }
+
+  // Ensure we go rigid
+  robot.setTorqueMode(false);
+
+  return 0;
 }
