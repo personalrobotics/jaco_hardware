@@ -58,6 +58,25 @@ set(KINOVA_ARM_LIBS
     -l:USBCommandLayerUbuntu.so)
 
 
+#==============================================================================
+# Format
+#
+
+list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake")
+include(ClangFormat)
+
+clang_format_setup(VERSION 6.0)
+
+if (CLANG_FORMAT_EXECUTABLE)
+  file(GLOB_RECURSE ALL_SOURCE_FILES
+    LIST_DIRECTORIES false
+    include/JacoRobot.h src/*.c src/*.cpp)
+
+  clang_format_add_sources(${ALL_SOURCE_FILES})
+
+  clang_format_add_targets()
+endif()
+
 ## Specify libraries to link a library or executable target against
  target_link_libraries(jaco_hardware
    ${catkin_LIBRARIES}
