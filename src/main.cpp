@@ -49,27 +49,24 @@ int main(int argc, char *argv[]) {
   return -1;
 }
 
-// Zero Torque Sensors
-bool zeroTorque = false;
-nh.getParam("zero_torque", zeroTorque);
-if (zeroTorque) {
-  nh.setParam("zero_torque", false);
-  ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
-  std::cin.get();
-  bool ret = robot.zeroTorqueSensors();
-  if (!ret) {
-    ROS_ERROR("Could not zero torque sensors");
-    return -1;
-  }
-  return 0;
-}
-return 0;
-}
+    // Zero Torque Sensors
+    bool zeroTorque = false;
+    nh.getParam("run_zero_torque", zeroTorque);
+    if(zeroTorque) {
+        nh.setParam("run_zero_torque", false);
+        ROS_INFO_STREAM("Moving Robot To Candlestick [ENTER when ready]...");
+        std::cin.get();
+        bool ret = robot.zeroTorqueSensors();
+        if(!ret) {
+            ROS_ERROR("Could not zero torque sensors");
+            return -1;
+        }
+        return 0;
+    }
 
-bool enableGravComp = false;
-nh.getParam("grav_comp", enableGravComp);
-if (enableGravComp) {
-  nh.setParam("grav_comp", false);
+    bool enableGravComp = false;
+    nh.getParam("grav_comp", enableGravComp);
+    if(enableGravComp) {
 
   // Activate default grav comp parameters
   std::string gravCompFile = "calib/GravComParams_Empty.txt";
@@ -78,29 +75,16 @@ if (enableGravComp) {
   if (robot.useGravcompForEStop(true, gravCompFile)) {
     ROS_INFO_STREAM("Gravcomp Enabled!");
 
-    // Whether to enter grav comp on start-up
-    bool enterGravComp = false;
-    nh.getParam("start_grav_comp", enterGravComp);
-    if (enterGravComp) {
-      ROS_INFO_STREAM("Entering Grav Comp...");
-      nh.setParam("start_grav_comp", false);
-      robot.enterGravComp();
-    }
-  } // end if(Gravcomp successfuly enabled)
-} // end if(enableGravComp)
-nh.setParam("grav_comp_file", "calib/GravComParams_Empty.txt");
-
-// Whether to enter grav comp on start-up
-bool enterGravComp = false;
-nh.getParam("jaco_hardware/start_grav_comp", enterGravComp);
-if (enterGravComp) {
-  ROS_INFO_STREAM("Entering Grav Comp...");
-  nh.setParam("jaco_hardware/start_grav_comp", false);
-  robot.enterGravComp();
-}
-} // end if(Gravcomp successfuly enabled)
-} // end if(enableGravComp)
-nh.setParam("jaco_hardware/grav_comp_file", "calib/GravComParams_Empty.txt");
+        // Whether to enter grav comp on start-up
+        bool enterGravComp = false;
+        nh.getParam("run_grav_comp", enterGravComp);
+        if(enterGravComp) {
+            ROS_INFO_STREAM("Entering Grav Comp...");
+            nh.setParam("run_grav_comp", false);
+            robot.enterGravComp();
+        }
+      } // end if(Gravcomp successfuly enabled)
+    } // end if(enableGravComp)
 
 ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
