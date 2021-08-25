@@ -84,7 +84,7 @@ private:
   vector<double> cmd_pos;
   vector<double> cmd_vel;
   vector<double> cmd_eff;
-  vector<double> cmd_cart_vel;
+  vector<double> prev_cmd_pos;
 
   // Joint State
   vector<double> pos;

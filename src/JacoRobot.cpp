@@ -379,6 +379,7 @@ void JacoRobot::sendPositionCommand(const std::vector<double> &command) {
   // settings Angular position
   AngularInfo joint_pos;
   joint_pos.InitStruct();
+  
 
   joint_pos.Actuator1 = float(radiansToDegrees(command.at(0) - pos_offsets[0]));
   joint_pos.Actuator2 = float(radiansToDegrees(command.at(1) - pos_offsets[1]));
@@ -400,6 +401,12 @@ void JacoRobot::sendPositionCommand(const std::vector<double> &command) {
       float(radiansToFingerTicks(command.at(6)));
   trajectory.Position.Fingers.Finger2 =
       float(radiansToFingerTicks(command.at(7)));
+
+  // Clear FIFO if new command
+  if(command != prev_cmd_pos) {
+    EraseAllTrajectories();
+    prev_cmd_pos = command;
+  }
 
   int r = NO_ERROR_KINOVA;
   r = SendAdvanceTrajectory(trajectory);
