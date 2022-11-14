@@ -1,3 +1,4 @@
+#include "std_msgs/Bool.h"
 #include "std_msgs/String.h"
 #include <JacoRobot.h>
 #include <cerrno>
@@ -6,6 +7,13 @@
 #include <ros/console.h>
 #include <ros/rate.h>
 #include <sstream>
+
+void watchdog(const std_msgs::BoolConstPtr &msg, JacoRobot &robot) {
+  if (msg->data)
+    robot.feedWatchdog();
+  else
+    robot.EStop();
+}
 
 int main(int argc, char *argv[]) {
   ROS_INFO_STREAM("JACO HARDWARE starting");
@@ -17,6 +25,15 @@ int main(int argc, char *argv[]) {
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
+
+  // Start Watchdog
+  ros::Subscriber sub = nh.subscribe<std_msgs::Bool>(
+      "watchdog", 100,
+      std::bind(watchdog, std::placeholders::_1, std::ref(robot)));
+
+  // Blocks until watchdog is active
+  ROS_INFO_STREAM("Waiting for watchdog...");
+  robot.checkWatchdog();
 
   // Run Grav Comp Calibration, writes to "ParametersOptimal_Z.txt"
   bool runGravCalib = false;
@@ -86,8 +103,10 @@ int main(int argc, char *argv[]) {
 
   ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
-  // Ros control rate of 100Hz
-  ros::Rate controlRate(100.0);
+  // Ros control rate: default 100Hz
+  double dControlRate = 100.0;
+  nh.getParam("control_rate", dControlRate);
+  ros::Rate controlRate(dControlRate);
   while (ros::ok()) {
     robot.read();
     if (robot.eff_stall == true) {
@@ -97,6 +116,8 @@ int main(int argc, char *argv[]) {
     }
 
     robot.write();
+
+    robot.checkWatchdog();
     controlRate.sleep();
   }
 

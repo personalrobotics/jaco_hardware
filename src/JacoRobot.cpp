@@ -4,6 +4,10 @@
 using namespace std;
 
 JacoRobot::JacoRobot(ros::NodeHandle nh) {
+  // Init Atomic bools
+  mWatchdogFed.store(false);
+  mEStop.store(false);
+
   ROS_INFO("Starting to initialize jaco_hardware");
   int i;
   cmd_pos.resize(num_full_dof);
@@ -379,7 +383,6 @@ void JacoRobot::sendPositionCommand(const std::vector<double> &command) {
   // settings Angular position
   AngularInfo joint_pos;
   joint_pos.InitStruct();
-  
 
   joint_pos.Actuator1 = float(radiansToDegrees(command.at(0) - pos_offsets[0]));
   joint_pos.Actuator2 = float(radiansToDegrees(command.at(1) - pos_offsets[1]));
@@ -403,7 +406,7 @@ void JacoRobot::sendPositionCommand(const std::vector<double> &command) {
       float(radiansToFingerTicks(command.at(7)));
 
   // Clear FIFO if new command
-  if(command != prev_cmd_pos) {
+  if (command != prev_cmd_pos) {
     EraseAllTrajectories();
     prev_cmd_pos = command;
   }
@@ -520,6 +523,11 @@ void JacoRobot::enterGravComp() {
 }
 
 void JacoRobot::write(void) {
+  // Check for EStop
+  if (mEStop.load()) {
+    enterGravComp();
+  }
+
   // Clear all commands when switching modes
   if (last_mode != joint_mode) {
     EraseAllTrajectories();
@@ -562,6 +570,29 @@ void JacoRobot::checkForStall(void) {
                i, soft_limits[i], eff[i]);
     }
   }
+}
+
+// Force Estop until restart
+void JacoRobot::EStop(void) { mEStop.store(true); }
+
+// Feed the watchdog
+void JacoRobot::feedWatchdog(void) { mWatchdogFed.store(true); }
+
+// Check that watchdog is fed
+void JacoRobot::checkWatchdog(void) {
+  static bool firstRun = true;
+
+  if (firstRun) {
+    while (!mWatchdogFed.load()) {
+      ros::Duration(0.001).sleep();
+    }
+    firstRun = false;
+  }
+
+  if (!mWatchdogFed.load())
+    EStop();
+  else
+    mWatchdogFed.store(false);
 }
 
 void JacoRobot::read(void) {

@@ -73,6 +73,15 @@ public:
   bool setTorqueMode(bool torqueMode);
   bool eff_stall;
 
+  // E-Stop: Overrides joint mode until restart
+  void EStop(void);
+
+  // Watchdog Functions:
+  // If checkWatchdog is called twice before feedWatchdog,
+  // drop to e-stop
+  void feedWatchdog(void);
+  void checkWatchdog(void);
+
 private:
   hardware_interface::JointStateInterface jnt_state_interface;
   hardware_interface::EffortJointInterface jnt_eff_interface;
@@ -102,6 +111,10 @@ private:
   // Only do grav comp if we have the parameters
   bool mUseGravComp;
   bool mInTorqueMode;
+
+  // E-Stop Params
+  std::atomic<bool> mEStop;
+  std::atomic<bool> mWatchdogFed;
 };
 
 #endif
