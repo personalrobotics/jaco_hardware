@@ -25,16 +25,6 @@ int main(int argc, char *argv[]) {
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
-
-  // Start Watchdog
-  ros::Subscriber sub = nh.subscribe<std_msgs::Bool>(
-      "watchdog", 100,
-      std::bind(watchdog, std::placeholders::_1, std::ref(robot)));
-
-  // Blocks until watchdog is active
-  ROS_INFO_STREAM("Waiting for watchdog...");
-  robot.checkWatchdog();
-
   // Run Grav Comp Calibration, writes to "ParametersOptimal_Z.txt"
   bool runGravCalib = false;
   nh.getParam("run_grav_calib", runGravCalib);
@@ -100,6 +90,15 @@ int main(int argc, char *argv[]) {
       }
     } // end if(Gravcomp successfuly enabled)
   }   // end if(enableGravComp)
+
+  // Start Watchdog
+  ros::Subscriber sub = nh.subscribe<std_msgs::Bool>(
+      "watchdog", 100,
+      std::bind(watchdog, std::placeholders::_1, std::ref(robot)));
+
+  // Blocks until watchdog is active
+  ROS_INFO_STREAM("Waiting for watchdog...");
+  robot.checkWatchdog();
 
   ROS_INFO_STREAM("JACO Hardware Setup Complete!");
 
